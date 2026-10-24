@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Proposals · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">Proposals</h1>
+
+  <div class="bar">
+    {% set tab = 'proposals' %}{% include "tabs.html" %}
+    <a class="add quiet" href="{{ url_for('left_out') }}">Not proposed: {{ listing.left_out|length }}</a>
+  </div>
+
+  {% include "notes.html" %}
+  {% include "proposal_problems.html" %}
+
+  <div class="panel on">
+    {% if not listing.proposals %}
+    <p class="note">Nothing is proposed.</p>
+    {% else %}
+    {# One form, so that ticking is a list operation. Pursuing what is ticked and dismissing one
+       are buttons of the same form that post to different places. #}
+    <form method="post" id="proposals">
+      <table id="proposals-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Company</th>
+            <th>Role</th>
+            <th>Posting</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for proposal in listing.proposals %}
+          {% set posting = proposal.posting %}
+          <tr>
+            <td class="tick">
+              <input type="checkbox" name="posting" value="{{ proposal.source }}/{{ posting.name }}"
+                     aria-label="Pursue {{ posting.company }}, {{ posting.role }}">
+            </td>
+            <td class="col-company">{{ posting.company }}</td>
+            <td class="col-position">
+              {% if posting.url %}<a href="{{ posting.url }}" rel="noreferrer" target="_blank">{{ posting.role }}</a>{% else %}{{ posting.role }}{% endif %}
+              {% if proposal.extract %}
+              <details class="note">
+                <summary><span class="extract">{{ proposal.extract }}</span><span class="less">The whole description</span></summary>
+                <div class="whole">{{ posting.description }}</div>
+              </details>
+              {% elif posting.description %}
+              <div class="note whole">{{ posting.description }}</div>
+              {% endif %}
+              <div class="note"><strong>Proposed because</strong> {{ proposal.reason }}.</div>
+            </td>
+            <td class="col-facts">
+              <dl class="facts">
+                {% if posting.location %}<dt>Location</dt><dd>{{ posting.location }}</dd>{% endif %}
+                {% if posting.deadline %}<dt>Deadline</dt><dd class="mono">{{ posting.deadline.isoformat() }}</dd>{% endif %}
+                {% if posting.pay %}<dt>Pay</dt><dd>{{ posting.pay }}</dd>{% endif %}
+                {% if posting.identifier %}<dt>Reference</dt><dd class="mono">{{ posting.identifier }}</dd>{% endif %}
+                {% if posting.posted %}<dt>Posted</dt><dd class="mono">{{ posting.posted.isoformat() }}</dd>{% endif %}
+                <dt>Source</dt><dd><a href="{{ url_for('source', name=proposal.source) }}">{{ proposal.source }}</a></dd>
+                {% if posting.first_seen %}<dt>Found</dt><dd class="mono">{{ posting.first_seen.strftime("%Y-%m-%d %H:%M") }}</dd>{% endif %}
+                <dt>Ages out</dt><dd class="mono">{{ proposal.ages_out.isoformat() }}</dd>
+              </dl>
+            </td>
+            <td class="end">
+              <button type="submit" class="icon-btn" formaction="{{ url_for('dismiss', source=proposal.source, name=posting.name) }}"
+                      aria-label="Dismiss {{ posting.company }}, {{ posting.role }}">Dismiss</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="form-group pursue">
+        <button type="submit" class="add" formaction="{{ url_for('pursue') }}">Pursue what is ticked</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if listing.held_back %}
+  <p class="note form-group">{{ listing.held_back }} more {{ "is" if listing.held_back == 1 else "are" }} held back by the cap of
+    {{ listing.settings.cap }} a day. They have not been shown, so nothing ages out on them, and they
+    come before anything found later.</p>
+  {% endif %}
+  {% endblock %}

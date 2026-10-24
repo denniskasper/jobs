@@ -1,0 +1,11 @@
+  {% if listing.problems %}
+  <div class="note" role="alert">
+    <p><strong>{{ listing.problems|length }} {{ "file" if listing.problems|length == 1 else "files" }} could not be read.</strong>
+      Fix the file by hand and reload. Until then nothing in it is proposed.</p>
+    <ul>
+      {% for problem in listing.problems %}
+      <li><span class="mono">{{ problem.path }}</span>: {{ problem.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}

@@ -1,0 +1,68 @@
+# jobs on the tailnet lane.
+#
+# The application plus a Tailscale sidecar that gives it its own node, its own
+# MagicDNS name and its own certificate. Nothing is published to the host and no
+# Traefik router exists, so there is no public route at all — not a filtered one,
+# none. The ipAllowList middleware this replaces was the only thing standing
+# between an app with no login and the public internet, and it lived in a config
+# Dokploy regenerates on every deploy.
+#
+# Why a sidecar rather than Traefik's Tailscale certificate resolver: that resolver
+# only issues certificates for `<machine>.<tailnet>.ts.net`, so every private app on
+# the box would share the one hostname. A per-app name needs a Tailscale Service and
+# dashboard approval. A sidecar is its own node, so `jobs.<tailnet>.ts.net` is just
+# its name.
+#
+# Required in the environment: TS_AUTHKEY, DATA_REPO_URL, DATA_REPO_TOKEN,
+# CLAUDE_CODE_OAUTH_TOKEN.
+#
+# Paths here are relative to THIS FILE'S directory, not the repository root,
+# because Compose takes the project directory from the first -f argument and this
+# file lives in deploy/. Hence `context: ..` for the build and a bare
+# `./serve.json` for the mount. Writing them as if the file sat at the root gives
+# "failed to read dockerfile: open Dockerfile: no such file or directory".
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    hostname: jobs                      # -> jobs.<tailnet>.ts.net
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:?set TS_AUTHKEY}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+      # Userspace networking: no /dev/net/tun, no NET_ADMIN, no privileged flags.
+      TS_USERSPACE: "true"
+    volumes:
+      # Without this the node identity is lost on every recreate and the tailnet
+      # fills up with jobs-1, jobs-2, jobs-3.
+      - tailscale-state:/var/lib/tailscale
+      - ./serve.json:/config/serve.json:ro
+    restart: unless-stopped
+
+  jobs:
+    build:
+      # The repository root: the Dockerfile is there and expects that context.
+      context: ..
+    # Share the sidecar's network namespace. The app listens on 127.0.0.1:8000 of
+    # that namespace, which only the sidecar's proxy can reach. It publishes no
+    # port and joins no other network.
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+    environment:
+      DATA_REPO_URL: ${DATA_REPO_URL:?set DATA_REPO_URL}
+      DATA_REPO_TOKEN: ${DATA_REPO_TOKEN:?set DATA_REPO_TOKEN}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:?set CLAUDE_CODE_OAUTH_TOKEN}
+      POLL_EVERY_HOURS: ${POLL_EVERY_HOURS:-24}
+      # Empty is unset to the service: each falls back to its default.
+      MODEL: ${MODEL:-}
+      PROSE_MODEL: ${PROSE_MODEL:-}
+    volumes:
+      - jobs-data:/data
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  tailscale-state:
+  jobs-data:

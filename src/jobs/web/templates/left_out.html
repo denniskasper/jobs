@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Not proposed · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">Not proposed</h1>
+
+  <div class="bar">
+    {% set tab = 'proposals' %}{% include "tabs.html" %}
+    <a class="add quiet" href="{{ url_for('proposals') }}">Back to the proposals</a>
+  </div>
+
+  {% include "notes.html" %}
+  {% include "proposal_problems.html" %}
+
+  <div class="panel on">
+    {% if not listing.left_out %}
+    <p class="note">Every kept Posting is proposed or waiting to be.</p>
+    {% else %}
+    <table id="left-out-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Role</th>
+          <th>Location</th>
+          <th>Source</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for each in listing.left_out %}
+        <tr>
+          <td class="col-company">{{ each.posting.company }}</td>
+          <td class="col-position">
+            {% if each.posting.url %}<a href="{{ each.posting.url }}" rel="noreferrer" target="_blank">{{ each.posting.role }}</a>{% else %}{{ each.posting.role }}{% endif %}
+          </td>
+          <td class="col-position">{{ each.posting.location or "" }}</td>
+          <td class="col-position" data-label="Source"><a href="{{ url_for('source', name=each.source) }}">{{ each.source }}</a></td>
+          <td class="col-position">
+            <span class="badge badge-closed">{{ each.why.value }}</span>
+            <div class="note">{{ each.reason }}.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endblock %}

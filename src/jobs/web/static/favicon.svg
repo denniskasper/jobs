@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The tick of the Pursue Gate, on the stylesheet's accent: its royal blue, and its light one
+       where the browser is dark, which is what the page goes by too. -->
+  <style>
+    rect { fill: #2338B8; }
+    @media (prefers-color-scheme: dark) { rect { fill: #9AABFF; } }
+  </style>
+  <rect width="32" height="32" rx="7"/>
+  <path d="M8.5 16.75 L13.75 22 L23.5 10.5" fill="none" stroke="#FCFCFA" stroke-width="3.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

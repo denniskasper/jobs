@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jobs"
+dynamic = ["version"]
+description = "A personal job-search system: Sources, Postings, Applications."
+requires-python = ">=3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "beautifulsoup4>=4.13",
+    "jinja2>=3.1",
+    "markdown-it-py>=3.0",
+    "playwright>=1.55",
+    "python-multipart>=0.0.9",
+    "pyyaml>=6.0",
+    "soupsieve>=2.6",
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx>=0.27",
+    "mypy>=1.11",
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "types-PyYAML>=6.0",
+]
+
+[tool.hatch.version]
+path = "src/jobs/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jobs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

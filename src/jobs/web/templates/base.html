@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ECEDE7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15171D" media="(prefers-color-scheme: dark)">
+  <title>{% block title %}Job search{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', path='dashboard.css') }}?{{ stylesheet }}">
+  {% block head %}{% endblock %}
+  <script>
+    // Theme before first paint, so the page never flashes the wrong one.
+    document.documentElement.setAttribute('data-theme',
+      matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  </script>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="rail">
+    <div class="rail-name">Job search</div>
+    <div class="rail-right">
+      <span class="rail-date mono">{{ today.isoformat() }}</span>
+    </div>
+  </div>
+
+  {% block shell %}{% endblock %}
+
+  <footer class="footer">
+    <span class="mono">v{{ version }}</span>
+  </footer>
+
+</div>
+
+{% block after %}{% endblock %}
+
+<script>
+  // A form marked data-busy waits on the network or on the model: say so while it does.
+  (function () {
+    function noteOf(form) {
+      return form.querySelector('.busy-note') || document.querySelector('.busy-note');
+    }
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form.matches('form[data-busy]')) return;
+      if (form.hasAttribute('data-busy-since')) { event.preventDefault(); return; }
+      var button = form.querySelector('button[type="submit"]');
+      form.setAttribute('data-busy-since', button.textContent);
+      button.textContent = form.getAttribute('data-busy');
+      button.setAttribute('aria-busy', 'true');
+      button.disabled = true;
+      var note = noteOf(form);
+      if (note) note.textContent = form.getAttribute('data-busy-note') || '';
+    });
+    // A page the browser kept for the back button comes back as it was left: busy.
+    window.addEventListener('pageshow', function (event) {
+      if (!event.persisted) return;
+      document.querySelectorAll('form[data-busy-since]').forEach(function (form) {
+        var button = form.querySelector('button[type="submit"]');
+        button.textContent = form.getAttribute('data-busy-since');
+        button.removeAttribute('aria-busy');
+        button.disabled = false;
+        form.removeAttribute('data-busy-since');
+        var note = noteOf(form);
+        if (note) note.textContent = '';
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>

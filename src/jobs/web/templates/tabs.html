@@ -1,0 +1,10 @@
+    <nav class="tabs" aria-label="Pages">
+      <a class="tab{% if tab == 'applications' %} on{% endif %}" href="{{ url_for('dashboard') }}">Applications</a>
+      <a class="tab{% if tab == 'proposals' %} on{% endif %}" href="{{ url_for('proposals') }}">Proposals</a>
+      <a class="tab{% if tab == 'sources' %} on{% endif %}" href="{{ url_for('sources') }}">Sources
+        {%- if sources_marker %}<span class="badge {{ sources_marker.badge }} tab-marker">
+          <span class="visually-hidden">{{ sources_marker.words }}</span>
+        </span>{% endif -%}
+      </a>
+      <a class="tab{% if tab == 'documents' %} on{% endif %}" href="{{ url_for('documents') }}">Documents</a>
+    </nav>

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Documents · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">Documents</h1>
+
+  <div class="bar">
+    {% set tab = 'documents' %}{% include "tabs.html" %}
+  </div>
+
+  {% include "notes.html" %}
+
+  {% if problem %}
+  <div class="note" role="alert">
+    <p><strong>The shared Documents could not be read.</strong> {{ problem }}. Fix the file and
+      reload; until then no Application can be created.</p>
+  </div>
+  {% endif %}
+
+  <div class="panel on">
+    {% if not documents %}
+    <p class="note">No shared Documents yet.</p>
+    {% else %}
+    <table id="documents-table">
+      <thead>
+        <tr>
+          <th>Linked in as</th>
+          <th>Content hash</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for document in documents %}
+        <tr>
+          <td class="col-company">{{ document.name }}</td>
+          <td class="col-position mono" data-label="Content hash" title="{{ document.content_hash }}">{{ document.content_hash[:12] }}</td>
+          <td class="col-date" data-label="Size">{{ "%.1f"|format(document.size / 1024) }} KB</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="cmd-section">
+    <h2 class="modal-title form-group">Add a shared Document</h2>
+    {% if refusal and entered %}
+    <div class="note form-group" role="alert">
+      <p><strong>Not added.</strong> {{ refusal }}</p>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('add_document') }}" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="form-label" for="file">File</label>
+        <input class="form-input" id="file" name="file" type="file" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="name">Link it in as, optional</label>
+        <input class="form-input" id="name" name="name" value="{{ entered.name }}"
+               placeholder="the file's own name">
+      </div>
+      <p class="note form-group">Stored once, and linked into every Application created from now
+        on. A name that is already taken moves to the new Document; Applications that exist keep the
+        one they have.</p>
+      <button type="submit" class="add">Add</button>
+    </form>
+  </div>
+  {% endblock %}

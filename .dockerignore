@@ -1,0 +1,47 @@
+# The data store never enters the image. At runtime it is a mounted volume
+# at DATA_DIR; see docs/decisions.md entries 9, 10 and 12.
+data/
+
+# Prose and tooling the build does not read. A change to any of these must not
+# cost a rebuild that ships a byte-identical image.
+docs/
+.claude/
+**/*.md
+!README.md
+
+.git/
+.gitattributes
+.gitignore
+.github/
+deploy/
+tests/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# Local config and secrets
+.env
+.env.*
+
+# Caches and output
+.cache/
+tmp/
+.tmp/
+*.log
+logs/
+
+# OS and editor
+.DS_Store
+.idea/
+*.swp

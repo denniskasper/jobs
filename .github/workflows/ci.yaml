@@ -1,0 +1,154 @@
+# Checks, then the deployment, then proof that the deployment is not public. Dokploy's Auto Deploy
+# is off: were Dokploy to listen to the push itself, the checks and the deployment would run side by
+# side and a red run would ship anyway (decision 31b).
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+# A superseding push cancels the run it overtook. Not on main: there every push keeps its own run,
+# because a run cancelled while it waits for Dokploy would take its deployment with it, and the
+# prose-only push that replaced it would not deploy.
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.sha || 'latest' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # On every push, prose included: the personal data guard in tests/test_no_personal_data.py reads
+  # every tracked file, and a ticket is as good a place to leak into as any. The interpreter is
+  # pinned to the image's 3.14, which is the version this actually ships on.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: pip install -e '.[dev]'
+
+      # Without it the tests that render in the real browser skip, and only the image has one.
+      - name: Browser
+        run: playwright install --with-deps --only-shell chromium
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format
+        run: ruff format --check .
+
+      - name: Typecheck
+        run: mypy
+
+      - name: Tests
+        run: pytest
+
+      # Dokploy builds the image too, but that is only reached by a push to main that deploys.
+      # Here it catches a broken Dockerfile on a branch. The layer cache is what keeps it from
+      # being the most expensive thing in the run: the apt and pip layers change rarely.
+      - uses: docker/setup-buildx-action@v4
+
+      - name: The image builds
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Whether this push touched anything the image is built from. A change to prose or tickets must
+  # not ship a byte-identical image. Keep this list in step with what the Dockerfile copies.
+  # Only the commits of this push are looked at, so after a deployment that failed, start the
+  # workflow by hand: a dispatch always deploys.
+  image-inputs:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.image == 'true' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            image:
+              - Dockerfile
+              - .dockerignore
+              - pyproject.toml
+              - src/**
+
+  deploy:
+    needs: [checks, image-inputs]
+    # The last clause skips the deployment until Dokploy exists, rather than failing every push to
+    # main in the meantime. Secrets cannot be read in a job condition, so the compose id stands in
+    # for them and is the one value kept as a variable: set it and deployments begin. Skipping it
+    # also skips not-public, which has nothing to verify without a deployment.
+    if: |
+      github.ref == 'refs/heads/main'
+        && needs.image-inputs.outputs.changed == 'true'
+        && vars.DOKPLOY_COMPOSE_ID != ''
+    runs-on: ubuntu-latest
+    environment: production
+    # One deployment at a time. Dokploy builds the head of main whichever run asks, so a waiting
+    # deployment that is overtaken by a newer one loses nothing.
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    env:
+      DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+      DOKPLOY_COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+      DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+    steps:
+      # GitHub masks a secret only where its whole value is printed. A curl that cannot reach
+      # Dokploy names the host alone, and the tailnet is part of every name on it, so both are
+      # masked too before anything can print them.
+      - name: Mask the Dokploy host
+        run: |
+          host=${DOKPLOY_URL#*://}
+          host=${host%%[:/]*}
+          echo "::add-mask::$host"
+          case "$host" in
+            *.ts.net) echo "::add-mask::${host#*.}" ;;
+          esac
+
+      - uses: actions/checkout@v5
+
+      # Dokploy has no public address. The runner joins the tailnet as an ephemeral node tagged
+      # tag:ci, which the tailnet's policy lets reach the Dokploy host and nothing else; the node is
+      # gone again when the job ends. See docs/deployment.md.
+      - name: Join the tailnet
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy and wait
+        run: deploy/dokploy-deploy.sh
+
+  # Decision 32, verified rather than assumed. This runner is a stranger on the public internet and
+  # never joins the tailnet, which makes it the right place to ask from.
+  not-public:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    env:
+      JOBS_HOSTNAME: ${{ secrets.JOBS_HOSTNAME }}
+      SERVER_PUBLIC_IP: ${{ secrets.SERVER_PUBLIC_IP }}
+      SERVER_PUBLIC_IPV6: ${{ secrets.SERVER_PUBLIC_IPV6 }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: The dashboard does not answer a stranger
+        run: deploy/verify-not-public.sh

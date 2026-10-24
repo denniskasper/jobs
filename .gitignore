@@ -1,0 +1,57 @@
+# ── This repo is the engine. All personal state lives in jobs-data. ──
+
+# NOT ignored, deliberately:
+#   tests/fixtures/  saved pages, including PDFs, are the test corpus
+
+# The data store. A clone of the jobs-data repository, nested here for
+# convenience. Git never recurses into an ignored path, so the inner repo is
+# invisible to this one and no submodule is involved. In the container this
+# same directory is a mounted volume at DATA_DIR.
+data/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node (md-to-pdf is shelled out, not imported)
+node_modules/
+
+# Headless browser caches
+.cache/
+.playwright/
+ms-playwright/
+
+# Runtime output
+*.log
+logs/
+tmp/
+.tmp/
+
+# Claude Code local state (skills themselves stay tracked, so they
+# travel to the server and the laptop with the repo)
+.claude/settings.local.json
+.claude/*.local.json
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/

@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Letter</title>
+<style>{{ stylesheet }}</style>
+</head>
+<body>
+{#- The engine's template names no person: who the Letter is from and who signs it are set by a
+    template of your own, `letter/template.html` in the data directory, which is handed the same
+    four things as this one: `stylesheet`, `address` as its lines, `date` and `body`. #}
+{% if address %}
+<address class="recipient">
+{%- for line in address %}
+{{ line }}<br>
+{%- endfor %}
+</address>
+{% endif %}
+<p class="date"><time datetime="{{ date.isoformat() }}">{{ date.isoformat() }}</time></p>
+<main class="body">
+{{ body }}
+</main>
+</body>
+</html>

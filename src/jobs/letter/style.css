@@ -1,0 +1,9 @@
+/* The engine's stylesheet for a Letter: one A4 page in the reader's own serif, and nothing that
+   says whose it is. `letter/style.css` in the data directory takes its place. */
+@page { size: A4; margin: 25mm 25mm 20mm; }
+html { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.45; color: #111; }
+body { margin: 0; }
+.recipient { font-style: normal; min-height: 40mm; margin-bottom: 8mm; }
+.date { text-align: right; margin: 0 0 10mm; }
+.body p { margin: 0 0 1em; }
+.body p:first-child { margin-bottom: 2em; }

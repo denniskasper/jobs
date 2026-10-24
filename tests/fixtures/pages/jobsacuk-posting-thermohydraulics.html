@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+            <!-- Loading the fontawesome to resolve slow icon rendering issues -->
+    <link rel="preload" 
+          href="/fonts/fontawesome-webfont.woff2?v=4.7.0" 
+          as="font" 
+          type="font/woff2" 
+          crossorigin="anonymous">
+
+    <script>
+        // Include the following lines to define the gtag() function when
+        // calling this code prior to your gtag.js or Tag Manager snippet
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+
+        let ad_storage = 'denied'
+        let analytics_storage = 'denied'
+
+        cookies = document.cookie.split(';')
+
+        for (let i = 0; i < cookies.length; i++) {
+            if (cookies[i].includes('CookieControl')) {
+                let cookie = cookies[i]
+                cookie = JSON.parse(cookie.split('=')[1])
+                ad_storage = cookie['optionalCookies']['advertising'] === 'accepted' ? 'granted' : 'denied'
+                analytics_storage = cookie['optionalCookies']['analytics']  === 'accepted' ? 'granted' : 'denied'
+            }
+        }
+
+        // Call the default command before gtag.js or Tag Manager runs to
+        // adjust how the tags operate when they run. Modify the defaults
+        // per your business requirements and prior consent granted/denied, e.g.:
+        gtag('consent', 'default', {
+            'ad_storage': ad_storage,
+            'analytics_storage': analytics_storage
+        });
+    </script>
+    <!-- Google Tag Manager -->
+    <script>
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({
+            'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-MVCS9TR');
+    </script>
+
+    <!-- End Google Tag Manager -->
+
+    
+<script src="https://cc.cdn.civiccomputing.com/9/cookieControl-9.x.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+    gtag('config', 'AW-CONVERSION_ID');
+
+    const config = {
+        apiKey: '8072dab28e3b67338e80046f35e1b9f6e59e984e',
+        product: 'PRO_MULTISITE',
+        setInnerHTML: true,
+        text: {
+            intro: 'Some of these cookies are essential, while others help us to improve your experience by providing insights into how the site is being used. For more detailed information about the cookies we use, please see our <a href="/legal/cookie-policy" target="_blank">Cookie policy</a>'
+        },
+        necessaryCookies: [
+            'JOBS_SESSID',
+            'searchCriteria',
+            'searchUri',
+            'lastSavedJob',
+            'savedJobOriginPage',
+            'savedJobAdvertIDs',
+            'CookieControl',
+            'iePopUp',
+            'cookiesession1',
+            'RESTJOBS_SESSID'
+        ],
+        necessaryDescription: 'Necessary cookies enable core functionality such as page navigation and access to secure areas. The website cannot function properly without these cookies, and can only be disabled by changing your browser preferences.',
+        optionalCookies: [
+            {
+                name: 'functional',
+                label: 'Functional Cookies',
+                description: 'These help us to personalise the website to you by remembering your preferences and settings.',
+                cookies: [
+                    'SOCS',
+                    'VISITOR_PRIVACY_METADATA',
+                    '_UserReference'
+                ],
+                onAccept: () => {
+                },
+                onRevoke: () => {
+                }
+            }, {
+                name: 'marketing',
+                label: 'Marketing Cookies',
+                description: 'Marketing cookies help us provide personalised and relevant services or advertising to our website visitors, and to assess the effectiveness of our marketing campaigns.',
+                cookies: [
+                    'sa-user-id',
+                    'sa-user-id-v2',
+                    'sa-user-id-v3',
+                    '_rdt_uuid',
+                    'wd / dpr',
+                    '_sfid_ae94',
+                    '_biz_flagsA',
+                    '_biz_nA',
+                    '_biz_pendingA',
+                    '_biz_uid',
+                    'ar_debug',
+                    '_gcl_au',
+                    '_evga_497c',
+                    'VISITOR_INFO1_LIVE',
+                    'YSC',
+                    '_fbp',
+                    'datr',
+                    'usida',
+                    'li_gc',
+                    'lang',
+                    'lidc',
+                    'bcookie',
+                    'UserMatchHistory',
+                    'AnalyticsSyncHistory',
+                    'muc_ads',
+                    'personalization_id',
+                    'NID',
+                    'MUID',
+                    '_clck',
+                    '_clsk',
+                    'ad-id',
+                    'ad-privacy',
+                    'MSPTC',
+                    'CLID',
+                    'jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK',
+                    'smcx_0_last_shown_at',
+                    'smcx_460923730_last_shown_at',
+                    '_ttp',
+                    'ttclid',
+                    'ttcsid',
+                    '_qca',
+                    '__spdt'
+                ],
+                onAccept: () => {
+                    gtag('consent', 'update', {ad_storage: 'granted'});
+                                        (() => {
+                        if (document.cookie.indexOf("jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK") === -1) {
+                            (function(t,e,s,o){var n,a,c;t.SMCX=t.SMCX||[],e.getElementById(o)||(n=e.getElementsByTagName(s),a=n[n.length-1],c=e.createElement(s),c.type="text/javascript",c.async=!0,c.id=o,c.src="https://widget.surveymonkey.com/collect/website/js/tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK.js",a.parentNode.insertBefore(c,a))})(window,document,"script","smcx-sdk");
+                            document.cookie =  "jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK=jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK; max-age=1209600; path=/; domain=" + window.location.hostname.replace('www.', '').replace('account.', '') + ";";
+                        }
+                    })();
+                                    },
+                onRevoke: () => {
+                    gtag('consent', 'update', {ad_storage: 'denied'});
+                    if (document.getElementsByClassName("smcx-widget")) {
+                        for (const i of document.getElementsByClassName("smcx-widget")) {i.remove()};
+                    }
+                    if (document.cookie.indexOf("jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK") !== -1) {
+                        document.cookie =  "jobseeker-survey_tRaiETqnLgj758hTBazgd08QHVw1Udpw8NOSW9kW3362MrZs1JI3hul2_2BfPNWjLK=; max-age=-1; path=/; domain=" + window.location.hostname.replace('www.', '').replace('account.', '') + ";";
+                    }
+                }
+            }, {
+                name: 'analytics',
+                label: 'Analytics Cookies',
+                description: 'Analytical cookies help us to improve our website by collecting and reporting information on its usage.',
+                cookies: [
+                    'SEARCH_SAMESITE',
+                    '_fs',
+                    '_ga',
+                    '_gid',
+                    '_gat',
+                    '__utma',
+                    '__utmt',
+                    '__utmb',
+                    '__utmc',
+                    '__utmz',
+                    '__utmv',
+                    'mf_user',
+                    'mf_[website-id]'
+                ],
+                onAccept: () => {
+                    gtag('consent', 'update', {analytics_storage: 'granted'});
+                },
+                onRevoke: () => {
+                    gtag('consent', 'update', {analytics_storage: 'denied'});
+                }
+            }
+        ],
+    }
+
+    CookieControl.load(config)
+</script>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="imagetoolbar" content="no" />
+    <meta name="keywords" content="jobs, jobs.ac.uk, appointments, vacancies, positions, studentships, graduate, fe jobs, further education, he jobs, school teacher, school jobs, teaching, school, uk, careers, research, postgraduate, faculty, recruitment, professor, lecturer, researcher, postdoctoral, phd, academic, education, science, university, college, chemistry, physics, computing, it, job, biological sciences, medical, contract, employer, employment, full-time jobs, part-time jobs, hr, human resources, manager, accountancy, employer, employers, situation, vacant, website, permanent, business, sales, jobs in the uk, united kingdom, international jobs, global jobs, overseas jobs, international employment opportunities, international work, jobs overseas, jobs abroad, overseas job vacancies, overseas employment, worldwide jobs" />
+    <meta name="copyright" content="jobs.ac.uk" />
+    <meta name="company" content="jobs.ac.uk" />
+    <meta name="google-site-verification" content="pmetKk3sujaIMIXFiO-9zRRPjprw_qq7kNSmT0KqXlc" />
+    <meta name="msvalidate.01" content="D09FE1934F8854A6B3CE0995F35E5000" />
+    <meta name="ahrefs-site-verification" content="c70efaec5b71651c1c7b86a6af0be9a6e10786f3db1830f5340c44ea5b658eab" />
+    <meta name="facebook-domain-verification" content="ydzx1qpax727987mku7r9vio8fddlg" />
+
+        <title>Lecturer or Senior Lecturer in Thermohydraulics at Loughborough University</title>
+    <meta itemprop="name" content="Lecturer or Senior Lecturer in Thermohydraulics at Loughborough University" />
+    <meta property="og:title" content="Lecturer or Senior Lecturer in Thermohydraulics at Loughborough University" />
+    <meta name="twitter:title" content="Lecturer or Senior Lecturer in Thermohydraulics at Loughborough University" />
+    
+    
+
+    
+        <link rel="canonical" href="https://www.jobs.ac.uk/job/DSL052/lecturer-or-senior-lecturer-in-thermohydraulics" />
+    <meta property="og:url" content="https://www.jobs.ac.uk/job/DSL052/lecturer-or-senior-lecturer-in-thermohydraulics" />
+    
+    
+    
+    <!-- Page Image -->
+    <meta name="image" content="https://www.jobs.ac.uk/images/global/jobsacuk-og-logo.png" />
+    <meta property="og:image" content="https://www.jobs.ac.uk/images/global/jobsacuk-og-logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:image:src" content="https://www.jobs.ac.uk/images/global/jobsacuk-og-logo.png" />
+
+    <!-- Facebook -->
+    <meta property="og:site_name" content="Jobs.ac.uk" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@jobsacuk" />
+
+    <!-- navigation aids -->
+    <link rev="start" href="/" title="Home Page" />
+
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="/jobs-win8-tile-144x144.png" />
+    <meta name="application-name" content="jobs.ac.uk" />
+    <meta name="msapplication-TileColor" content="#ffffff" />
+
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/jobs-touch-icon-144x144.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/jobs-touch-icon-114x114.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/jobs-touch-icon-72x72.png" />
+    <link rel="apple-touch-icon-precomposed" href="/jobs-touch-icon-57x57.png" />
+
+    <link rel="shortcut icon" href="/images/favicon.png" />
+
+    <!-- styles -->
+    <link rel="stylesheet" type="text/css" href="/css/responsive.css?1783433007" media="screen" />
+    <link rel="stylesheet" type="text/css" href="/css/print-job-details.css?1783432980" media="print" />
+
+    <!-- scripts -->
+                
+    <script type="text/javascript" src="//platform-api.sharethis.com/js/sharethis.js#property=65b0e1fc92c73d001906c93a&product=custom-share-buttons&source=platform" async="async"></script>
+    <script src="https://hcaptcha.com/1/api.js&amp;render=explicit" async defer></script>
+    <script type="text/javascript" src="/js/vendor.min.js?1783433011"></script>
+    <script async type="text/javascript" src="/js/bundle.min.js?1783433013"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <meta name="description" content="Searching for an academic job? Explore this Lecturer or Senior Lecturer in Thermohydraulics opening on jobs.ac.uk! Click to view more details and browse other academic jobs.">
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MVCS9TR"
+                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+    <script type="text/javascript" >
+        var jobAlertToggle = true;
+        var saveJobToggle = '.j-sidebar__save-job';
+        var user = {
+            userID: null,
+            loggedIn: false,
+            emailAddress: null        };
+        var searchUri = '&academicDisciplineFacet[0]=physical-and-environmental-sciences&subDisciplineFacet[0]=physics-and-astronomy&academicDisciplineFacet[1]=engineering-and-technology&subDisciplineFacet[1]=civil-engineering&subDisciplineFacet[2]=mechanical-engineering&subDisciplineFacet[3]=aerospace-engineering&subDisciplineFacet[4]=chemical-engineering&salaryBandFacet[0]=40000-49999&salaryBandFacet[1]=50000-59999&salaryBandFacet[2]=60000-69999&salaryBandFacet[3]=30000-39999&salaryBandFacet[4]=70000-79999&locality[]=Loughborough&location=Loughborough&locationDisplayName=Loughborough&locationCoords[]=52.772099%2C-1.206166&distance=30';
+        var searchCriteria = 'a:8:{s:23:&quot;academicDisciplineFacet&quot;;a:2:{i:0;s:35:&quot;physical-and-environmental-sciences&quot;;i:1;s:26:&quot;engineering-and-technology&quot;;}s:18:&quot;subDisciplineFacet&quot;;a:5:{i:0;s:21:&quot;physics-and-astronomy&quot;;i:1;s:17:&quot;civil-engineering&quot;;i:2;s:22:&quot;mechanical-engineering&quot;;i:3;s:21:&quot;aerospace-engineering&quot;;i:4;s:20:&quot;chemical-engineering&quot;;}s:15:&quot;salaryBandFacet&quot;;a:5:{i:0;s:11:&quot;40000-49999&quot;;i:1;s:11:&quot;50000-59999&quot;;i:2;s:11:&quot;60000-69999&quot;;i:3;s:11:&quot;30000-39999&quot;;i:4;s:11:&quot;70000-79999&quot;;}s:8:&quot;locality&quot;;a:1:{i:0;s:12:&quot;Loughborough&quot;;}s:8:&quot;location&quot;;s:12:&quot;Loughborough&quot;;s:19:&quot;locationDisplayName&quot;;s:12:&quot;Loughborough&quot;;s:14:&quot;locationCoords&quot;;a:1:{i:0;s:19:&quot;52.772099,-1.206166&quot;;}s:8:&quot;distance&quot;;s:2:&quot;30&quot;;}';
+        var job = {"job":{"advert_id":1083475,"reference":"DSL052","status":"live","keywords":"","title":"Lecturer or Senior Lecturer in Thermohydraulics","department":"Wolfson School of Mechanical, Electrical and Manufacturing Engineering","department_banner_id":0,"salary_min":"47,389","salary_max":"67,468","salary_time_unit":"YEAR","salary_comment":"per annum","advert_text":"<p><strong>Campus based<\/strong><\/p>\n<p><strong><\/strong>Join us and be part of a vibrant community at Loughborough University.\u00a0<\/p>\n<p><strong>About the University<\/strong><\/p>\n<p><strong><\/strong>At Loughborough, we strive for better, think differently, challenge convention and take action. We are passionate about\u00a0finding solutions\u00a0to the major problems faced by society and the planet, and we create opportunities for those with\u00a0the drive, the ambition, and the determination to apply themselves in the pursuit of better.<\/p>\n<p><strong>About the Department<\/strong><\/p>\n<p><strong><\/strong>The Wolfson School of Mechanical, Electrical and Manufacturing Engineering at Loughborough University is one of the largest and most successful engineering schools in the UK, consistently ranked among the top ten for our disciplines. We combine world-leading research with an outstanding student experience, underpinned by long-standing partnerships with industry, and by state-of-the-art facilities. Our collaborative and ambitious culture supports colleagues to excel across research, teaching and enterprise in support of the University Strategy, Creating Better Futures. Together.<\/p>\n<p>The School wishes to appoint an academic in thermohydraulics to enhance our undergraduate programme with new teaching in this area, with a particular focus on applications in the nuclear and defence sectors. The intellectual core of the post is the thermal-hydraulic behaviour of energy systems under demanding conditions together with the modelling that underpins them.<\/p>\n<p>We welcome applications from candidates across thermal-hydraulics, heat transfer, thermofluids, fluid systems, multiphase flow and computational fluid dynamics, whether or not their work is currently badged as nuclear, including those whose expertise has been built in adjacent settings such as process engineering, aerospace and propulsion, conventional power, or thermal management. A track record in nuclear engineering is welcome but not essential.<\/p>\n<p>The successful candidate will have access to the School's new Wolfson X-Lab Extreme facility, offering a natural route into coupled thermal\u2013structural research.<\/p>\n<p><strong>About You<\/strong><strong>\u00a0<\/strong><\/p>\n<ul>\n<li>You will have a PhD or equivalent research experience in thermohydraulics, heat transfer, thermofluids, multiphase flow, computational fluid dynamics, or a closely related field.<\/li>\n<li>You will have a track record of research excellence, with publications in leading journals and a trajectory towards international recognition. Experience in the nuclear sector or in high-temperature applications is welcomed but not essential.<\/li>\n<\/ul>\n<p><strong>Why should you Apply?<\/strong><\/p>\n<p>With huge amount of variety in the role, there is an opportunity for you to develop and continually grow.<\/p>\n<p>If this sounds like the right place, team and role for you please do get in touch. We\u2019d love to hear from you.<\/p>\n<p>Informal enquiries should be directed to Professor Aarav Rana, via email to\u00a0<a href=\"mailto:A.Rana3@example.org\">A.Rana3@example.org<\/a>.\u00a0<\/p>\n<p>For more information refer to the\u00a0<a href=\"https:\/\/vacancies.lboro.ac.uk\/jobdesc\/REQ260524.PDF\"><strong>Job Description and Person Specification<\/strong><\/a><strong>.<\/strong><\/p>\n<p><strong>Application Process<\/strong><\/p>\n<p>For further support with your application, please\u00a0<a href=\"https:\/\/www.lboro.ac.uk\/services\/hr\/jobs\/applications\/\">refer to our application guidance<\/a>, which includes some top tips to help you when completing your application.<\/p>\n<p>We are happy to consider any reasonable adjustments that candidates may need during the recruitment process. If there are additional adjustments, you\u2019d like to request please contact\u00a0<a href=\"mailto:unit-admin@example.org\">unit-admin@example.org<\/a>. We also offer reasonable adjustments on the job.<\/p>\n<p><strong>Closing Date: 30 September 2026<\/strong><\/p>\n<p><strong>Interview Date: To be confirmed<\/strong><\/p>\n<p><strong>Our\u00a0Benefits<\/strong><\/p>\n<p>We\u2019re committed to creating an environment where you can flourish. You\u2019ll enjoy generous time off, including 14 university closure days and bank holidays, plus a holiday purchase scheme. Other benefits include flexible and hybrid working options, family-friendly support, world-class sporting facilities, and a wide range of financial, health, and sustainability perks.<span>\u00a0<\/span><a href=\"https:\/\/www.lboro.ac.uk\/services\/hr\/rewards-and-benefits\">Discover more<\/a>\u00a0about our full range of rewards &amp; benefits.<\/p>","apply_url":"https:\/\/vacancies.lboro.ac.uk\/tlive_webrecruitment\/wrd\/run\/ETREC107GF.open?VACANCY_ID=662750fACO&WVID=5913100PrZ","employer_id":90,"employer_name":"Loughborough University","date_publish":1785801600,"date_expire":1790726400,"date_closing":1790726400,"date_removed":null,"default_logo_id":0,"go_live_date":"4th August 2026","closing_date":"30th September 2026","expiring_date":"30th September 2026","cust_advert_ref":"REQ260524","salary_min_sterling":"47,389","salary_max_sterling":"67,468","currency_id":1,"salary_currency_symbol":"\u00a3","salary_currency_code":"GBP","hours":null,"contract":null,"further_particulars":"","home_based":0,"field_based":0,"online":0,"salary_rate_id":5,"value":"YEAR","display_text":"Per Annum","title_uri_path":"lecturer-or-senior-lecturer-in-thermohydraulics","subject_areas":{"32":{"category_id":32,"category_name":"Physical & Environmental Sciences","uri_path":"physical-and-environmental-sciences","parent_category_id":0,"legacy_id":"0500","grouping_id":2,"subcategories":[{"category_id":35,"category_name":"Physics & Astronomy","uri_path":"physics-and-astronomy","parent_category_id":32,"legacy_id":"0503","grouping_id":2}]},"58":{"category_id":58,"category_name":"Engineering & Technology","uri_path":"engineering-and-technology","parent_category_id":0,"legacy_id":"0800","grouping_id":2,"subcategories":[{"category_id":59,"category_name":"Civil Engineering","uri_path":"civil-engineering","parent_category_id":58,"legacy_id":"0801","grouping_id":2},{"category_id":60,"category_name":"Mechanical Engineering","uri_path":"mechanical-engineering","parent_category_id":58,"legacy_id":"0802","grouping_id":2},{"category_id":61,"category_name":"Aerospace Engineering","uri_path":"aerospace-engineering","parent_category_id":58,"legacy_id":"0803","grouping_id":2},{"category_id":65,"category_name":"Chemical Engineering","uri_path":"chemical-engineering","parent_category_id":58,"legacy_id":"0807","grouping_id":2}]}},"job_types":[{"category_name":"Academic or Research","uri_path":"academic-or-research","parent_category_id":0,"legacy_id":"01"}],"location":"Midlands of England","location_code":"","logos":false,"salary_bands":[{"salary_band_id":7,"salary_band":"\u00a340,000 - \u00a349,999","uri_path":"40000-49999"},{"salary_band_id":8,"salary_band":"\u00a350,000 - \u00a359,999","uri_path":"50000-59999"},{"salary_band_id":9,"salary_band":"\u00a360,000 - \u00a369,999","uri_path":"60000-69999"}],"salary_bands_additional":[{"salary_band_id":6,"salary_band":"\u00a330,000 - \u00a339,999","uri_path":"30000-39999"},{"salary_band_id":10,"salary_band":"\u00a370,000 - \u00a379,999","uri_path":"70000-79999"}],"workplaces":[{"workplace_id":3,"workplace_display_name":"On Site"}],"url":"\/job\/DSL052\/lecturer-or-senior-lecturer-in-thermohydraulics"},"employer":{"employer_id":90,"employer_name":"Loughborough University","employer_uri_path":"loughborough-university","is_featured":0,"composite_logo_required":0,"parent_employer_uri_path":null,"logo_width":900,"logo_height":450,"video_id":null,"video_title":null,"video_transcript":null},"fundings":[],"qualifications":[],"contracts":[{"display_text":"Permanent"}],"hours":[{"display_text":"Full Time"}],"locations":"Loughborough","locationsArray":{},"workplaces":[{"workplace_id":3,"workplace_display_name":"On Site"}],"subjectAreas":[{"category_id":32,"category_name":"Physical & Environmental Sciences","uri_path":"physical-and-environmental-sciences","parent_category_id":0,"legacy_id":"0500","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":35,"category_name":"Physics & Astronomy","uri_path":"physics-and-astronomy","parent_category_id":32,"legacy_id":"0503","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":58,"category_name":"Engineering & Technology","uri_path":"engineering-and-technology","parent_category_id":0,"legacy_id":"0800","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":59,"category_name":"Civil Engineering","uri_path":"civil-engineering","parent_category_id":58,"legacy_id":"0801","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":60,"category_name":"Mechanical Engineering","uri_path":"mechanical-engineering","parent_category_id":58,"legacy_id":"0802","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":61,"category_name":"Aerospace Engineering","uri_path":"aerospace-engineering","parent_category_id":58,"legacy_id":"0803","grouping_id":2,"discipline_facet":"academicDisciplineFacet"},{"category_id":65,"category_name":"Chemical Engineering","uri_path":"chemical-engineering","parent_category_id":58,"legacy_id":"0807","grouping_id":2,"discipline_facet":"academicDisciplineFacet"}],"searchCriteria":{"academicDisciplineFacet":["physical-and-environmental-sciences","engineering-and-technology"],"subDisciplineFacet":["physics-and-astronomy","civil-engineering","mechanical-engineering","aerospace-engineering","chemical-engineering"],"salaryBandFacet":["40000-49999","50000-59999","60000-69999","30000-39999","70000-79999"],"locality":["Loughborough"],"location":"Loughborough","locationDisplayName":"Loughborough","locationCoords":["52.772099,-1.206166"],"distance":"30"}};
+    </script>
+    <a id="skip-link" href="#main-content" style="opacity: 0;" tabindex="0">Skip to main content</a>
+    <nav class="j-header">
+    <div id="mobile-nav-expander" tabindex="0" class="j-header__mobile-menu-expander" data-target-menu="#mobile-main-nav">
+        <i class="fa fa-bars"></i>
+    </div>
+    <div class="j-header__logo">
+        <a href="https://www.jobs.ac.uk/" title="home page">
+            <img class="j-image__header" src="/images/global/jobsacuk-logo-new.png" alt="jobs.ac.uk" title="jobs.ac.uk" />
+        </a>
+    </div>
+    <div class="j-header__mobile-menu-expander" data-target-menu="#mobile-account-nav">
+                    <a href="https://account.jobs.ac.uk/user/login"><i class="fa fa-user-circle-o"></i></a>
+            </div>
+    <div class="j-header__mobile-menu" id="mobile-main-nav">
+        <ul>
+            <li class="active">
+                <a href="https://www.jobs.ac.uk/">Find a Job</a>
+            </li>
+            <li >
+                <a href="https://www.jobs.ac.uk/phd">Find PhDs</a>
+            </li>
+            <li >
+                <a href="https://career-advice.jobs.ac.uk">Career Advice</a>
+            </li>
+                            <li >
+                    <a href="https://account.jobs.ac.uk/user/login">Jobs by Email</a>
+                </li>
+                        <li><a href="https://www.jobs.ac.uk/recruiters/">Advertise a Job</a></li>
+            <li class="recruiters"><a href="https://www.jobs.ac.uk/recruiters/">Recruiters</a></li>
+        </ul>
+    </div>
+                <div class="j-header__banner-ad">
+            <script>
+            
+        </script>
+    </div>
+
+        <div class="j-header__menu">
+        <ul>
+            <li class="active">
+                <a href="https://www.jobs.ac.uk/">Find a Job</a>
+            </li>
+            <li >
+                <a href="https://www.jobs.ac.uk/phd">Find PhDs</a>
+            </li>
+            <li >
+                <a href="https://career-advice.jobs.ac.uk">Career Advice</a>
+            </li>
+                            <li >
+                    <a href="https://account.jobs.ac.uk/user/login">Jobs by Email</a>
+                </li>
+                        <li><a href="https://www.jobs.ac.uk/recruiters/">Advertise a Job</a></li>
+        </ul>
+    </div>
+    <div class="j-header__menu j-header__menu--right">
+                    <ul class="j-header__menu">
+                <li >
+                    <a href="https://account.jobs.ac.uk/">Your Account</a>
+                </li>
+                <li class="recruiters"><a href="https://www.jobs.ac.uk/recruiters/">Recruiters</a></li>
+            </ul>
+            </div>
+</nav>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"JobPosting","title":"Lecturer or Senior Lecturer in Thermohydraulics","description":"<p><strong>Campus based</strong></p>\n<p><strong></strong>Join us and be part of a vibrant community at Loughborough University. </p>\n<p><strong>About the University</strong></p>\n<p><strong></strong>At Loughborough, we strive for better, think differently, challenge convention and take action. We are passionate about finding solutions to the major problems faced by society and the planet, and we create opportunities for those with the drive, the ambition, and the determination to apply themselves in the pursuit of better.</p>\n<p><strong>About the Department</strong></p>\n<p><strong></strong>The Wolfson School of Mechanical, Electrical and Manufacturing Engineering at Loughborough University is one of the largest and most successful engineering schools in the UK, consistently ranked among the top ten for our disciplines. We combine world-leading research with an outstanding student experience, underpinned by long-standing partnerships with industry, and by state-of-the-art facilities. Our collaborative and ambitious culture supports colleagues to excel across research, teaching and enterprise in support of the University Strategy, Creating Better Futures. Together.</p>\n<p>The School wishes to appoint an academic in thermohydraulics to enhance our undergraduate programme with new teaching in this area, with a particular focus on applications in the nuclear and defence sectors. The intellectual core of the post is the thermal-hydraulic behaviour of energy systems under demanding conditions together with the modelling that underpins them.</p>\n<p>We welcome applications from candidates across thermal-hydraulics, heat transfer, thermofluids, fluid systems, multiphase flow and computational fluid dynamics, whether or not their work is currently badged as nuclear, including those whose expertise has been built in adjacent settings such as process engineering, aerospace and propulsion, conventional power, or thermal management. A track record in nuclear engineering is welcome but not essential.</p>\n<p>The successful candidate will have access to the School's new Wolfson X-Lab Extreme facility, offering a natural route into coupled thermal–structural research.</p>\n<p><strong>About You</strong><strong> </strong></p>\n<ul>\n<li>You will have a PhD or equivalent research experience in thermohydraulics, heat transfer, thermofluids, multiphase flow, computational fluid dynamics, or a closely related field.</li>\n<li>You will have a track record of research excellence, with publications in leading journals and a trajectory towards international recognition. Experience in the nuclear sector or in high-temperature applications is welcomed but not essential.</li>\n</ul>\n<p><strong>Why should you Apply?</strong></p>\n<p>With huge amount of variety in the role, there is an opportunity for you to develop and continually grow.</p>\n<p>If this sounds like the right place, team and role for you please do get in touch. We’d love to hear from you.</p>\n<p>Informal enquiries should be directed to Professor Aarav Rana, via email to <a href=\"mailto:A.Rana3@example.org\">A.Rana3@example.org</a>. </p>\n<p>For more information refer to the <a href=\"https://vacancies.lboro.ac.uk/jobdesc/REQ260524.PDF\"><strong>Job Description and Person Specification</strong></a><strong>.</strong></p>\n<p><strong>Application Process</strong></p>\n<p>For further support with your application, please <a href=\"https://www.lboro.ac.uk/services/hr/jobs/applications/\">refer to our application guidance</a>, which includes some top tips to help you when completing your application.</p>\n<p>We are happy to consider any reasonable adjustments that candidates may need during the recruitment process. If there are additional adjustments, you’d like to request please contact <a href=\"mailto:unit-admin@example.org\">unit-admin@example.org</a>. We also offer reasonable adjustments on the job.</p>\n<p><strong>Closing Date: 30 September 2026</strong></p>\n<p><strong>Interview Date: To be confirmed</strong></p>\n<p><strong>Our Benefits</strong></p>\n<p>We’re committed to creating an environment where you can flourish. You’ll enjoy generous time off, including 14 university closure days and bank holidays, plus a holiday purchase scheme. Other benefits include flexible and hybrid working options, family-friendly support, world-class sporting facilities, and a wide range of financial, health, and sustainability perks.<span> </span><a href=\"https://www.lboro.ac.uk/services/hr/rewards-and-benefits\">Discover more</a> about our full range of rewards &amp; benefits.</p><p>£47,389 to £67,468 per annum</p>","datePosted":"2026-08-04T00:00:00+00:00","validThrough":"2026-09-30T00:00:00+00:00","employmentType":"Full Time,Permanent","hiringOrganization":{"@type":"Organization","name":"Loughborough University","logo":"https://www.jobs.ac.uk/images/employer-logos/medium/90.gif","sameAs":"https://www.lboro.ac.uk/","department":{"@type":"Organization","name":"Wolfson School of Mechanical, Electrical and Manufacturing Engineering"}},"jobLocation":[{"@type":"Place","address":{"@type":"PostalAddress","addressLocality":"Loughborough","addressRegion":"England","addressCountry":"United Kingdom"}}],"baseSalary":{"@type":"MonetaryAmount","currency":"GBP","value":{"@type":"StructuredValue","unitText":"YEAR","minValue":"47389.00","maxValue":"67468.00"}}}</script>
+<div class="grid grid__2-col grid__2-col--left grid__2-col--large-right ie11-min-width" style="display: -ms-grid; -ms-grid-columns: 8fr 3fr;">
+    <div class="sub-grid column-1 edge-span-2-mobile" style="display: -ms-grid">
+        <a style=" display:none;" id="returntosearch" class="row-1" href="">
+            <i class="fa fa-chevron-left">&nbsp;</i>Back to search results        </a>
+        <div class="sub-grid sub-grid--centered row-2">
+                    <a href="/search/employer/loughborough-university">
+            <img
+                    id="main-content"
+                    class="j-image j-image--responsive j-default-logo"
+                    src="/images/employer-logos/medium/90.gif?1581509164"
+                    alt="Loughborough University"
+                    title="Loughborough University"
+            />
+        </a>
+    </div>
+        <h1 class="j-advert__title row-3">Lecturer or Senior Lecturer in Thermohydraulics</h1>
+
+        <h3 class="j-advert__employer row-4">
+            <b>
+                <span>Loughborough University</span>
+            </b>
+            - Wolfson School of Mechanical, Electrical and Manufacturing Engineering        </h3>
+
+        <div class="j-advert-details__container row-5">
+    <div class="sub-grid sub-grid__2-col ie-flex--column j-advert-details__ie-display" style="grid-row-gap: 0;">
+        <div class="j-advert-details__first-col">
+            <table>
+                                <tr>
+                    <th class="j-advert-details__table-header">Location:</th>
+                    <td>
+                        Loughborough
+                    </td>
+                </tr>
+                                <tr>
+                    <th class="j-advert-details__table-header">Salary:</th>
+                    <td>
+                                                    £47,389 to £67,468
+                                                                                        per annum
+                            
+                                            </td>
+                </tr>
+                                <tr>
+                    <th class="j-advert-details__table-header">Hours:</th>
+                    <td>Full Time</td>
+                </tr>
+                                                <tr>
+                    <th class="j-advert-details__table-header">Contract Type:</th>
+                    <td>Permanent</td>
+                </tr>
+                            </table>
+        </div>
+        <div class="j-advert-details__second-col">
+            <table>
+                <tr>
+                    <th class="j-advert-details__table-header">Placed On:</th>
+                    <td>4th August 2026</td>
+                </tr>
+                                <tr>
+                    <th class="j-advert-details__table-header">Closes:</th>
+                    <td>30th September 2026</td>
+                </tr>
+                                                <tr>
+                    <th class="j-advert-details__table-header">Job Ref:</th>
+                    <td>REQ260524</td>
+                </tr>
+                            </table>
+        </div>
+            </div>
+</div>
+
+        
+                <div class="row-7">
+
+                            <a href="https://vacancies.lboro.ac.uk/tlive_webrecruitment/wrd/run/ETREC107GF.open?VACANCY_ID=662750fACO&amp;WVID=5913100PrZ" target="_blank">
+                                <div id="job-apply-button" class="j-form-input">
+                        <input class="default" type="submit" value="Apply">
+                    </div>
+                  </a>
+                </a>
+        </div>
+                
+        <div id="job-description" class="row-8">
+             <p><strong>Campus based</strong></p>
+<p><strong></strong>Join us and be part of a vibrant community at Loughborough University. </p>
+<p><strong>About the University</strong></p>
+<p><strong></strong>At Loughborough, we strive for better, think differently, challenge convention and take action. We are passionate about finding solutions to the major problems faced by society and the planet, and we create opportunities for those with the drive, the ambition, and the determination to apply themselves in the pursuit of better.</p>
+<p><strong>About the Department</strong></p>
+<p><strong></strong>The Wolfson School of Mechanical, Electrical and Manufacturing Engineering at Loughborough University is one of the largest and most successful engineering schools in the UK, consistently ranked among the top ten for our disciplines. We combine world-leading research with an outstanding student experience, underpinned by long-standing partnerships with industry, and by state-of-the-art facilities. Our collaborative and ambitious culture supports colleagues to excel across research, teaching and enterprise in support of the University Strategy, Creating Better Futures. Together.</p>
+<p>The School wishes to appoint an academic in thermohydraulics to enhance our undergraduate programme with new teaching in this area, with a particular focus on applications in the nuclear and defence sectors. The intellectual core of the post is the thermal-hydraulic behaviour of energy systems under demanding conditions together with the modelling that underpins them.</p>
+<p>We welcome applications from candidates across thermal-hydraulics, heat transfer, thermofluids, fluid systems, multiphase flow and computational fluid dynamics, whether or not their work is currently badged as nuclear, including those whose expertise has been built in adjacent settings such as process engineering, aerospace and propulsion, conventional power, or thermal management. A track record in nuclear engineering is welcome but not essential.</p>
+<p>The successful candidate will have access to the School's new Wolfson X-Lab Extreme facility, offering a natural route into coupled thermal–structural research.</p>
+<p><strong>About You</strong><strong> </strong></p>
+<ul>
+<li>You will have a PhD or equivalent research experience in thermohydraulics, heat transfer, thermofluids, multiphase flow, computational fluid dynamics, or a closely related field.</li>
+<li>You will have a track record of research excellence, with publications in leading journals and a trajectory towards international recognition. Experience in the nuclear sector or in high-temperature applications is welcomed but not essential.</li>
+</ul>
+<p><strong>Why should you Apply?</strong></p>
+<p>With huge amount of variety in the role, there is an opportunity for you to develop and continually grow.</p>
+<p>If this sounds like the right place, team and role for you please do get in touch. We’d love to hear from you.</p>
+<p>Informal enquiries should be directed to Professor Aarav Rana, via email to <a href="mailto:A.Rana3@example.org">A.Rana3@example.org</a>. </p>
+<p>For more information refer to the <a href="https://vacancies.lboro.ac.uk/jobdesc/REQ260524.PDF"><strong>Job Description and Person Specification</strong></a><strong>.</strong></p>
+<p><strong>Application Process</strong></p>
+<p>For further support with your application, please <a href="https://www.lboro.ac.uk/services/hr/jobs/applications/">refer to our application guidance</a>, which includes some top tips to help you when completing your application.</p>
+<p>We are happy to consider any reasonable adjustments that candidates may need during the recruitment process. If there are additional adjustments, you’d like to request please contact <a href="mailto:unit-admin@example.org">unit-admin@example.org</a>. We also offer reasonable adjustments on the job.</p>
+<p><strong>Closing Date: 30 September 2026</strong></p>
+<p><strong>Interview Date: To be confirmed</strong></p>
+<p><strong>Our Benefits</strong></p>
+<p>We’re committed to creating an environment where you can flourish. You’ll enjoy generous time off, including 14 university closure days and bank holidays, plus a holiday purchase scheme. Other benefits include flexible and hybrid working options, family-friendly support, world-class sporting facilities, and a wide range of financial, health, and sustainability perks.<span> </span><a href="https://www.lboro.ac.uk/services/hr/rewards-and-benefits">Discover more</a> about our full range of rewards &amp; benefits.</p> 
+            
+            <div class="row-10 sub-grid sub-grid--centered ">
+    </div>
+        </div>
+
+        <div class="border-bottom row-9">
+        </div>
+
+        <div id="feedback" class="border-bottom row-12">
+            <section class="j-social-media__share">
+    <p><strong>Share on social media</strong></p>
+    <div class="j-social-media__share-buttons">
+        <div class="j-social-media__share-button st-custom-button" tabindex="0" data-network="twitter">
+            <img src="/images/global/sharing/x.png" alt="Share on X">
+        </div>
+        <div class="j-social-media__share-button st-custom-button" tabindex="0" data-network="facebook">
+            <img src="/images/global/sharing/facebook.png" alt="Share on Facebook">
+        </div>
+        <div class="j-social-media__share-button st-custom-button" tabindex="0" data-network="linkedin">
+            <img src="/images/global/sharing/linkedin.png" alt="Share on LinkedIn">
+        </div>
+    </div>
+</section>
+            We value your feedback on the quality of our adverts.
+            If you have a comment to make about the overall quality of this advert,
+            or its categorisation then please
+            <a class="underlined" href="/job/feedback/advert/DSL052/">send us your feedback</a>
+        </div>
+
+        <div class="row-13">
+    <h5>Advert information</h5>
+    <div>
+        <p><b>Type / Role:</b></p>
+        <div>
+            
+            <form method="GET" action="/search/academic-or-research">
+                <div class="j-form-input ie-11-width">
+                                                                 <input class="j-form-input__disabled-cat" type="button" value="Academic or Research">
+                                    </div>
+            </form>
+                    </div>
+    </div>
+    <div>
+        <p><b>Subject Area(s):</b></p>
+
+        
+            <form method="GET" action="/search/">
+                                                    
+                    <div class="j-form-input ie-11-width">
+                        <input name="academicDisciplineFacet[0]" value="physical-and-environmental-sciences" type="hidden">
+                        <input class="parent-category" type="submit" value="Physical &amp; Environmental Sciences">
+                    </div>
+                            </form>
+        
+            <form method="GET" action="/search/">
+                
+                    <div class="j-form-input ie-11-width">
+                                                <input name="academicDisciplineFacet[0]" value="physical-and-environmental-sciences" type="hidden">
+                        <input name="subDisciplineFacet[0]" value="physics-and-astronomy" type="hidden">
+                        <input class="" type="submit" value="Physics &amp; Astronomy">
+                    </div>
+
+                            </form>
+        
+            <form method="GET" action="/search/">
+                                                    
+                    <div class="j-form-input ie-11-width">
+                        <input name="academicDisciplineFacet[0]" value="engineering-and-technology" type="hidden">
+                        <input class="parent-category" type="submit" value="Engineering &amp; Technology">
+                    </div>
+                            </form>
+        
+            <form method="GET" action="/search/">
+                
+                    <div class="j-form-input ie-11-width">
+                                                <input name="academicDisciplineFacet[0]" value="engineering-and-technology" type="hidden">
+                        <input name="subDisciplineFacet[0]" value="civil-engineering" type="hidden">
+                        <input class="" type="submit" value="Civil Engineering">
+                    </div>
+
+                            </form>
+        
+            <form method="GET" action="/search/">
+                
+                    <div class="j-form-input ie-11-width">
+                                                <input name="academicDisciplineFacet[0]" value="engineering-and-technology" type="hidden">
+                        <input name="subDisciplineFacet[0]" value="mechanical-engineering" type="hidden">
+                        <input class="" type="submit" value="Mechanical Engineering">
+                    </div>
+
+                            </form>
+        
+            <form method="GET" action="/search/">
+                
+                    <div class="j-form-input ie-11-width">
+                                                <input name="academicDisciplineFacet[0]" value="engineering-and-technology" type="hidden">
+                        <input name="subDisciplineFacet[0]" value="aerospace-engineering" type="hidden">
+                        <input class="" type="submit" value="Aerospace Engineering">
+                    </div>
+
+                            </form>
+        
+            <form method="GET" action="/search/">
+                
+                    <div class="j-form-input ie-11-width">
+                                                <input name="academicDisciplineFacet[0]" value="engineering-and-technology" type="hidden">
+                        <input name="subDisciplineFacet[0]" value="chemical-engineering" type="hidden">
+                        <input class="" type="submit" value="Chemical Engineering">
+                    </div>
+
+                            </form>
+            </div>
+    <div>
+        <p><b>Location(s):</b></p>
+        <div class="j-form-input ie-11-width">
+            <input class="j-form-input__disabled-cat" type="button" value="Midlands of England">
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <div class="j-sidebar j-sidebar--left j-sidebar--always-show j-sidebar--light-blue column-2 ie-border-left ie-sidebar" style="align-content: flex-start;">
+        <div>
+    <h5>Job tools</h5>
+    <!-- template for the modal component -->
+<script type="text/x-template" id="modal-template">
+<transition name="modal">
+    <div class="modal-mask">
+        <div class="modal-wrapper">
+            <div class="modal-container">
+                <div>
+                    <a id="job-alert-modal-close-button" class="j-job-alert-modal__close-button" @click="$emit('close')">&times;</a>
+                    <div id="modal-header">
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <form id="saveSearchAsJobAlertCTA" novalidate>
+                        <slot name="body">
+                        </slot>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+</transition>
+</script>    <!-- app -->
+    <div id="job-alert-cta">
+        <div id="job-alert-button" class="j-form-input ie-11-width">
+            <i class="j-form-input__button-icon fa fa-envelope">&nbsp;</i>
+            <input class="with-icon" type="submit" value="Email me jobs like this" v-on:click="verifyUser(user.emailAddress)">
+        </div>
+        <!-- Job alert modal form -->
+        <div v-cloak>
+                        <!-- use the modal component, pass in the prop -->
+            <modal v-if="showModal" @close="showModal=false;$root.transitionModalState()">
+            
+                <div v-if="jobAlertCreated == true && !user.loggedIn" slot="body" class="j-job-alert-modal__created-body">
+                    <h4 v-if="searchContext" class="j-job-alert-modal__created-title">PhD Alert Created</h4>
+                    <h4 v-else class="j-job-alert-modal__created-title">Job Alert Created</h4>
+                    <p v-if="searchContext" class="j-job-alert-modal__create-action-description">Your PhD alert has been successfully created for this search.</p>
+                    <p v-else class="j-job-alert-modal__create-action-description">Your job alert has been successfully created for this search.</p>
+                    <a v-if="searchContext" id="job-alert-created_return-to-search-results_skeleton" href="#" class="j-job-alert-modal__create-action-button phd-branding" @click="showModal = false; $root.transitionModalState()">Ok</a>
+                    <a v-else id="job-alert-created_return-to-search-results_skeleton" href="#" class="j-job-alert-modal__create-action-button" @click="showModal = false; $root.transitionModalState()">Ok</a>
+                </div>
+
+                <div v-else-if="jobAlertCreated == true && user.loggedIn" slot="body" class="j-job-alert-modal__created-body">
+                    <h4 v-if="searchContext" class="j-job-alert-modal__created-title">PhD Alert Created</h4>
+                    <h4 v-else class="j-job-alert-modal__created-title">Job Alert Created</h4>
+                    <p v-if="searchContext" class="j-job-alert-modal__create-action-description">Your PhD alert has been successfully created for this search.</p>
+                    <p v-else class="j-job-alert-modal__create-action-description">Your job alert has been successfully created for this search.</p>
+                    <a v-if="searchContext" id="job-alert-created_manage-your-job-alerts" href="https://account.jobs.ac.uk/job-alerts" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="showModal = false; $root.transitionModalState()">Manage your job alerts</a>
+                    <a v-else id="job-alert-created_manage-your-job-alerts" href="https://account.jobs.ac.uk/job-alerts" target="_blank" class="j-job-alert-modal__create-action-button" @click="showModal = false; $root.transitionModalState()">Manage your job alerts</a>
+                </div>
+
+                <!-- user not logged in but has pending account -->
+                <div v-else-if="resetSaveSteps == false && (user.accountStatus == 'pending' || user.accountStatus == 'skeleton-pending')" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">Account Verification Missing</h4>
+                    <p class="j-job-alert-modal__create-action-description">In order to create multiple job alerts, you must first verify your email address to complete your account creation</p>
+                    <a v-if="searchContext" id="account-verification-required_request-verification-email" target="_blank" v-bind:href="'https://account.jobs.ac.uk/user/request-verification-email?email=' + emailInput" class="j-job-alert-modal__create-action-button phd-branding" @click="$root.transitionModalState()">Request verification email</a>
+                    <a v-else id="account-verification-required_request-verification-email" target="_blank" v-bind:href="'https://account.jobs.ac.uk/user/request-verification-email?email=' + emailInput" class="j-job-alert-modal__create-action-button" @click="$root.transitionModalState()">Request verification email</a>
+                </div>  
+
+                <!-- user not logged in but has skeleton account -->
+                <div v-else-if="resetSaveSteps == false && user.accountStatus == 'skeleton'" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">jobs.ac.uk Account Required</h4>
+                    <p class="j-job-alert-modal__create-action-description">In order to create multiple alerts, you must create a jobs.ac.uk jobseeker account</p>
+                    <a v-if="searchContext" id="jbe-account-required_create-account_skeleton" v-bind:href="'https://account.jobs.ac.uk/auth/login?populate-email=' + emailInput + '#register'" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="$root.transitionModalState()">Create Account</a>
+                    <a v-else id="jbe-account-required_create-account_skeleton" v-bind:href="'https://account.jobs.ac.uk/auth/login?populate-email=' + emailInput + '#register'" target="_blank" class="j-job-alert-modal__create-action-button" @click="$root.transitionModalState()">Create Account</a>
+                </div>
+
+                <!-- user not logged in and has blocked status -->
+                <div v-else-if="resetSaveSteps == false && user.accountStatus == 'blocked' && !user.loggedIn" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">Alert Creation Failed</h4>
+                    <p class="j-job-alert-modal__create-action-description">Unfortunately, your account is currently blocked. Please login to unblock your account.</p>
+                    <div v-if="searchContext">
+                        <a id="blocked-account_login" v-bind:href="'https://account.jobs.ac.uk/auth/login?populate-email=' + emailInput" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="$root.transitionModalState()">Login</a>
+                    </div>
+                    <div v-else>
+                        <a id="blocked-account_login" v-bind:href="'https://account.jobs.ac.uk/auth/login?populate-email=' + emailInput" target="_blank" class="j-job-alert-modal__create-action-button" @click="$root.transitionModalState()">Login</a>
+                    </div>
+                </div>
+
+                <!-- user logged in and has blocked status -->
+                <div v-else-if="resetSaveSteps == false && user.accountStatus == 'blocked' && user.loggedIn" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">Email Address Blocked</h4>
+                    <p class="j-job-alert-modal__create-action-description">We received a delivery failure message when attempting to send you an email and therefore your email address has been blocked. You will not receive job alerts until your email address is unblocked. To do so, please choose from one of the two options below.</p>
+                    <div v-if="searchContext">
+                        <a id="blocked-account_update-email_reverify" href="https://account.jobs.ac.uk/user/re-verify-email" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="!user.loggedIn ? resetSaveSteps = true : showModal = false; ">Re-verify your email</a>
+                        <a id="blocked-account_update-email_reverify" href="https://account.jobs.ac.uk/your-account/edit-email" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="!user.loggedIn ? resetSaveSteps = true : showModal = false; ">Update your email</a>
+                    </div>
+                    <div v-else>
+                        <a id="blocked-account_update-email_reverify" href="https://account.jobs.ac.uk/user/re-verify-email" target="_blank" class="j-job-alert-modal__create-action-button" @click="!user.loggedIn ? resetSaveSteps = true : showModal = false; ">Re-verify your email</a>
+                        <a id="blocked-account_update-email_reverify" href="https://account.jobs.ac.uk/your-account/edit-email" target="_blank" class="j-job-alert-modal__create-action-button" @click="!user.loggedIn ? resetSaveSteps = true : showModal = false; ">Update your email</a>
+                    </div>
+                </div>
+
+                <!-- user has max number of Job Alerts -->
+                <div v-else-if="resetSaveSteps == false && user.accountStatus == 'active' && !user.canCreateJobAlerts" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">Max Alerts Reached</h4>
+                    <p class="j-job-alert-modal__create-action-description">A maximum of 5 Job Alerts can be created against your account. Please remove an existing alert in order to create this new Job Alert</p>
+                    <a v-if="searchContext" id="max-alerts-reached_manage-your-job-alerts" href="https://account.jobs.ac.uk/job-alerts" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="$root.transitionModalState() ">Manage your job alerts</a>
+                    <a v-else id="max-alerts-reached_manage-your-job-alerts" href="https://account.jobs.ac.uk/job-alerts" target="_blank" class="j-job-alert-modal__create-action-button" @click="$root.transitionModalState()">Manage your job alerts</a>
+                </div>
+
+                <!-- failed to create an alert -->
+                <div v-else-if="jobAlertCreationFailed" slot="body">
+                    <h4 class="j-job-alert-modal__create-title">Creation Failed</h4>
+                    <p class="j-job-alert-modal__create-action-description">Unfortunately, your alert was not created at this time. Please try again.</p>
+                    <a v-if="searchContext" id="creation-of-alerts-failed_manage-your-job-alerts" target="_blank" class="j-job-alert-modal__create-action-button phd-branding" @click="showModal=false; $root.transitionModalState()">Ok</a>
+                    <a v-else id="creation-of-alerts-failed_manage-your-job-alerts" target="_blank" class="j-job-alert-modal__create-action-button" @click="showModal=false; $root.transitionModalState()">Ok</a>
+                </div>
+
+                <!-- user has less than max number of Job Alerts -->
+                <div v-else-if="user.loggedIn && user.canCreateJobAlerts" slot="body" class="j-job-alert-modal__create-body">
+                    <h4 v-if="searchContext" class="j-job-alert-modal__create-title">Create PhD Alert</h4>
+                    <h4 v-else class="j-job-alert-modal__create-title">Create Job Alert</h4>
+                    <p class="j-job-alert-modal__create-action-description"><span v-if="searchContext">When you create this PhD alert we will email you a selection of PhDs matching your criteria.</span><span v-else>When you create this job alert we will email you a selection of jobs matching your criteria.</span> Our <a href="https://www.jobs.ac.uk/legal/terms-and-conditions" target="_blank">Terms and Conditions</a> and <a href="https://www.jobs.ac.uk/legal/privacy-policy" target="_blank">Privacy Policy</a> apply to this service. Any personal data you provide in setting up this alert is processed in accordance with our <a href="https://www.jobs.ac.uk/legal/privacy-notice" target="_blank">Privacy Notice</a></p>
+                    <input type="hidden" name="emailInput" value="">
+                    <input type="hidden" name="searchCriteria" value="a:8:{s:23:&quot;academicDisciplineFacet&quot;;a:2:{i:0;s:35:&quot;physical-and-environmental-sciences&quot;;i:1;s:26:&quot;engineering-and-technology&quot;;}s:18:&quot;subDisciplineFacet&quot;;a:5:{i:0;s:21:&quot;physics-and-astronomy&quot;;i:1;s:17:&quot;civil-engineering&quot;;i:2;s:22:&quot;mechanical-engineering&quot;;i:3;s:21:&quot;aerospace-engineering&quot;;i:4;s:20:&quot;chemical-engineering&quot;;}s:15:&quot;salaryBandFacet&quot;;a:5:{i:0;s:11:&quot;40000-49999&quot;;i:1;s:11:&quot;50000-59999&quot;;i:2;s:11:&quot;60000-69999&quot;;i:3;s:11:&quot;30000-39999&quot;;i:4;s:11:&quot;70000-79999&quot;;}s:8:&quot;locality&quot;;a:1:{i:0;s:12:&quot;Loughborough&quot;;}s:8:&quot;location&quot;;s:12:&quot;Loughborough&quot;;s:19:&quot;locationDisplayName&quot;;s:12:&quot;Loughborough&quot;;s:14:&quot;locationCoords&quot;;a:1:{i:0;s:19:&quot;52.772099,-1.206166&quot;;}s:8:&quot;distance&quot;;s:2:&quot;30&quot;;}" v-model="searchCriteria">
+                    <input type="hidden" name="searchUri" value="&amp;academicDisciplineFacet[0]=physical-and-environmental-sciences&amp;subDisciplineFacet[0]=physics-and-astronomy&amp;academicDisciplineFacet[1]=engineering-and-technology&amp;subDisciplineFacet[1]=civil-engineering&amp;subDisciplineFacet[2]=mechanical-engineering&amp;subDisciplineFacet[3]=aerospace-engineering&amp;subDisciplineFacet[4]=chemical-engineering&amp;salaryBandFacet[0]=40000-49999&amp;salaryBandFacet[1]=50000-59999&amp;salaryBandFacet[2]=60000-69999&amp;salaryBandFacet[3]=30000-39999&amp;salaryBandFacet[4]=70000-79999&amp;locality[]=Loughborough&amp;location=Loughborough&amp;locationDisplayName=Loughborough&amp;locationCoords[]=52.772099%2C-1.206166&amp;distance=30" v-model="searchUri">
+
+                    <div id="processingUserData" class="lds-css" v-if="processingUserData">
+                        <div class="sml-rolling">
+                            <div></div>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <input v-if="searchContext" id="create-job-alert_create-job-alert" type="submit" value="Create PhD Alert" class="j-job-alert-modal__create-action-button--full-width phd-branding" v-on:click="saveSearchAsJobAlert($event); addUniqueIdToXButton(1); resetSaveSteps = false; processingUserData = true;" >
+                        <input v-else id="create-job-alert_create-job-alert" type="submit" value="Create Job Alert" class="j-job-alert-modal__create-action-button--full-width" v-on:click="saveSearchAsJobAlert($event);addUniqueIdToXButton(1); resetSaveSteps = false; processingUserData = true;">
+                    </div>
+                </div>
+
+
+                <!-- user not logged in-->
+                <div v-else-if="user.loggedIn!=true" slot="body" class="j-job-alert-modal__create-body">
+                    <h4 v-if="searchContext" class="j-job-alert-modal__create-title">Create PhD Alert</h4>
+                    <h4 v-else class="j-job-alert-modal__create-title">Create Job Alert</h4>
+                    <div class="j-form-input j-form-input--border">
+                        <input id="email" type="email" name="email" placeholder="Email" class="j-job-alert-modal__email-input" v-model="emailInput">
+                    </div>
+                    <div id="email-error" class="j-form-input__error grid__1-col--span-2-col row-2"></div>
+                    <p class="j-job-alert-modal__create-action-description"><span v-if="searchContext" >When you create this PhD alert we will email you a selection of PhDs matching your criteria.</span><span v-else>When you create this job alert we will email you a selection of jobs matching your criteria.</span> Our <a href="https://www.jobs.ac.uk/legal/terms-and-conditions" target="_blank">Terms and Conditions</a> and <a href="https://www.jobs.ac.uk/legal/privacy-policy" target="_blank">Privacy Policy</a> apply to this service. Any personal data you provide in setting up this alert is processed in accordance with our <a href="https://www.jobs.ac.uk/legal/privacy-notice" target="_blank">Privacy Notice</a></p>
+                    <label for="newsOptIn" class="j-job-alert-modal__opt-in">
+                        <input id="newsOptIn" name="newsOptIn" class="j-job-alert-modal__opt-in-tick-area" type="checkbox" value="1" v-model="newsOptIn">I would like to receive email communication from jobs.ac.uk relating to Company News
+                    </label>
+                    <label for="eventsOptIn" class="j-job-alert-modal__opt-in">
+                        <input id="eventsOptIn" name="eventsOptIn" class="j-job-alert-modal__opt-in-tick-area" type="checkbox" value="1"  v-model="eventsOptIn">I would like to receive email communication from jobs.ac.uk relating to Conferences, Meetings and Events
+                    </label>
+                    <input type="hidden" name="searchCriteria" value="a:8:{s:23:&quot;academicDisciplineFacet&quot;;a:2:{i:0;s:35:&quot;physical-and-environmental-sciences&quot;;i:1;s:26:&quot;engineering-and-technology&quot;;}s:18:&quot;subDisciplineFacet&quot;;a:5:{i:0;s:21:&quot;physics-and-astronomy&quot;;i:1;s:17:&quot;civil-engineering&quot;;i:2;s:22:&quot;mechanical-engineering&quot;;i:3;s:21:&quot;aerospace-engineering&quot;;i:4;s:20:&quot;chemical-engineering&quot;;}s:15:&quot;salaryBandFacet&quot;;a:5:{i:0;s:11:&quot;40000-49999&quot;;i:1;s:11:&quot;50000-59999&quot;;i:2;s:11:&quot;60000-69999&quot;;i:3;s:11:&quot;30000-39999&quot;;i:4;s:11:&quot;70000-79999&quot;;}s:8:&quot;locality&quot;;a:1:{i:0;s:12:&quot;Loughborough&quot;;}s:8:&quot;location&quot;;s:12:&quot;Loughborough&quot;;s:19:&quot;locationDisplayName&quot;;s:12:&quot;Loughborough&quot;;s:14:&quot;locationCoords&quot;;a:1:{i:0;s:19:&quot;52.772099,-1.206166&quot;;}s:8:&quot;distance&quot;;s:2:&quot;30&quot;;}">
+                    <input type="hidden" name="searchUri" value="&amp;academicDisciplineFacet[0]=physical-and-environmental-sciences&amp;subDisciplineFacet[0]=physics-and-astronomy&amp;academicDisciplineFacet[1]=engineering-and-technology&amp;subDisciplineFacet[1]=civil-engineering&amp;subDisciplineFacet[2]=mechanical-engineering&amp;subDisciplineFacet[3]=aerospace-engineering&amp;subDisciplineFacet[4]=chemical-engineering&amp;salaryBandFacet[0]=40000-49999&amp;salaryBandFacet[1]=50000-59999&amp;salaryBandFacet[2]=60000-69999&amp;salaryBandFacet[3]=30000-39999&amp;salaryBandFacet[4]=70000-79999&amp;locality[]=Loughborough&amp;location=Loughborough&amp;locationDisplayName=Loughborough&amp;locationCoords[]=52.772099%2C-1.206166&amp;distance=30">
+                    <div id="h-captcha" data-sitekey="255cf980-025a-41cd-9b7a-e13baeba5b66"></div>
+                    <div id="captcha-error" class="j-form-input__error grid__1-col--span-2-col row-2"></div>
+                    <div id="processingUserData" class="lds-css" v-if="processingUserData">
+                        <div class="sml-rolling">
+                            <div></div>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <input v-if="searchContext" id="create-job-alert_create-job-alert_skeleton" type="submit" value="Create PhD Alert" class="j-job-alert-modal__create-action-button--full-width phd-branding"  v-on:click="addUniqueIdToXButton(1); resetSaveSteps = false; saveSearchAsJobAlert($event);" >
+                        <input v-else id="create-job-alert_create-job-alert_skeleton" type="submit" value="Create Job Alert" class="j-job-alert-modal__create-action-button--full-width" v-on:click="addUniqueIdToXButton(1); resetSaveSteps = false; saveSearchAsJobAlert($event);" >
+                    </div>
+
+                </div>
+               
+            </modal>
+        </div>
+    </div>
+    <div class="j-sidebar__save-job j-form-input ie-11-width" data-advert-id="1083475">
+        <a id="save-job-1083475-toggle" class="save-job-toggle" title="Save this job" tabindex="0" data-saved-tooltip="Remove from saved jobs" data-unsaved-tooltip="Save this job">
+            <i class="fa save-job-icon" aria-hidden="true"></i>
+            <span class="save-job-text" data-saved-text="Saved" data-unsaved-text="Save this job">Save this job</span>
+        </a>
+    </div>
+    <form method="GET" action="/job/share/">
+        <input type="hidden" name="job_ref" value="DSL052">
+        <div class="j-form-input ie-11-width">
+            <i class="j-form-input__button-icon fa fa-user">&nbsp;</i>
+            <input class="with-icon" type="submit" value="Send this job to a friend">
+        </div>
+    </form>
+    <form method="GET" action="https://career-advice.jobs.ac.uk">
+        <div class="j-form-input ie-11-width">
+            <i class="j-form-input__button-icon fa fa-comments">&nbsp;</i>
+            <input class="with-icon" type="submit" value="Career advice">
+        </div>
+    </form>
+        <button name="login-to-save-job" type="button" style="display: none;">Login to Save Job</button>
+    <button name="max-saved-jobs" type="button" style="display: none;">Max Saved Jobs Reached</button>
+    <div class="j-modal modal-container" data-trigger='button[name="max-saved-jobs"]'>
+    <a class="j-job-alert-modal__close-button j-modal__close">&times;</a>
+    <div class="j-modal__header">
+        <h4 class="j-job-alert-modal__create-title">Max Saved Jobs Reached</h4>
+    </div>
+    <div class="j-modal__body">
+        <p class="j-job-alert-modal__create-action-description">A maximum of 500 Saved Jobs can be created against your account. Please remove an existing Saved Job in order to add a new Saved Job.</p>
+        <a href="https://account.jobs.ac.uk/saved-jobs" target="_blank" class="j-job-alert-modal__create-action-button">Manage Saved Jobs</a>
+    </div>
+</div>
+
+<div class="j-modal modal-container" data-trigger='button[name="login-to-save-job"]'>
+    <a class="j-job-alert-modal__close-button j-modal__close">&times;</a>
+    <div class="j-modal__header">
+        <h4 class="j-job-alert-modal__create-title">Save Job</h4>
+    </div>
+    <div class="j-modal__body">
+        <p class="j-job-alert-modal__create-action-description">Please sign in or register for an account to save a job.</p>
+        <a href="https://account.jobs.ac.uk/auth/login" class="j-job-alert-modal__create-action-button">Sign In</a>
+        <a href="https://account.jobs.ac.uk/auth/login/#register" class="j-job-alert-modal__create-action-button">Register</a>
+    </div>
+</div>
+</div>
+
+                    <div>
+    <h5>More jobs from Loughborough University</h5>
+            <p class="job-link"><a href="/job/DSY820/athletic-union-manager">Athletic Union Manager</a></p>
+            <p class="job-link"><a href="/job/DSY824/business-operations-administrator">Business Operations Administrator</a></p>
+            <p class="job-link"><a href="/job/DSY508/taught-programmes-co-ordinator-student-support">Taught Programmes Co-ordinator (Student Support)</a></p>
+            <p class="job-link"><a href="/job/DSY513/research-and-innovation-support-manager">Research &amp; Innovation Support Manager</a></p>
+            <p class="job-link"><a href="/job/DSY431/research-associate-in-metal-additive-manufacturing">Research Associate in Metal Additive Manufacturing</a></p>
+            <p class="job-link"><a href="/job/DSY165/av-technical-support-officer">AV Technical Support Officer</a></p>
+        <p><a href="/search/employer/loughborough-university">Show all jobs for this employer &hellip;</a></p>
+</div>
+                            <div>
+    <h5>More jobs like this</h5>
+        <p class="job-link"><a href="/job/DSY832/">Research Assistant</a></p>
+        <p class="job-link"><a href="/job/DSY541/">Open Rank Teaching Faculty Position in Environmental Science</a></p>
+        <p class="job-link"><a href="/job/DSY860/">KTP Associate in Molecular Modelling and Biochar Fertiliser</a></p>
+        <p class="job-link"><a href="/job/DSZ030/">Hooke/Titchmarsh Research Fellow (Complex Systems)</a></p>
+        <p class="job-link"><a href="/job/DSY808/">Instrument Software Development Engineer</a></p>
+    </div>
+                <div class="j-social-media">
+        <h5 class="j-social-media__header">Join in and follow us</h5>
+        <a class="j-social-media__follow" href="https://www.facebook.com/jobsac" target="_blank" title="jobs.ac.uk facebook">
+        <img class="j-image" src="/images/global/sharing/facebook.png" alt="facebook" /></a>
+    <a class="j-social-media__follow" href="https://twitter.com/jobsacuk" target="_blank" title="jobs.ac.uk x">
+        <img class="j-image" src="/images/global/sharing/x.png" alt="x" /></a>
+    <a class="j-social-media__follow" href="https://uk.linkedin.com/company/jobsacuk" target="_blank" title="jobs.ac.uk linkedin">
+        <img class="j-image" src="/images/global/sharing/linkedin.png" alt="linkedin" /></a>
+    <a class="j-social-media__follow" href="https://www.instagram.com/jobsacuk" target="_blank" title="jobs.ac.uk instagram">
+        <img class="j-image" src="/images/global/sharing/instagram.png" alt="instagram" /></a>
+    <a class="j-social-media__follow" href="https://www.youtube.com/user/jobsac" target="_blank" title="jobs.ac.uk youtube">
+        <img class="j-image" src="/images/global/sharing/youtube.png" alt="youtube" /></a>
+</div>
+    </div>
+</div>
+    <div class="j-footer ie11-min-width">
+    <div class="j-footer__bottom-nav">
+        <a class="j-footer__logo" href="https://www.jobs.ac.uk/" title="home page">
+            <img src="/images/global/jobs_ac_uk-logo-grey.gif" alt="jobs.ac.uk - Great jobs for bright people" title="jobs.ac.uk - Great jobs for bright people" />
+        </a>
+        <p class="j-footer__copyright j-footer__copyright--mobile-display">
+            <small>Copyright &copy; jobs.ac.uk 1998 - 2026</small>
+        </p>
+        <div class="j-footer__top-nav j-footer__top-nav--display">
+            <div class="j-footer__navigation j-footer__navigation-primary column-1">
+                <ul class="row-1">
+                    <li class="first"><a href="https://www.jobs.ac.uk/">Find a Job</a></li>
+                    <li><a href="https://www.jobs.ac.uk/phd">Find PhDs</a></li>
+                    <li><a href="https://career-advice.jobs.ac.uk">Career Advice</a></li>
+                    <li><a href="https://account.jobs.ac.uk/jobs-by-email/">Jobs by Email</a></li>
+                    <li><a href="https://www.jobs.ac.uk/recruiters/">Advertise a Job</a></li>
+                </ul>
+                <ul class="j-footer__navigation-secondary row-2">
+                    <li><a href="https://www.jobs.ac.uk/about/">About Us</a></li>
+                    <li><a href="https://www.jobs.ac.uk/about/contact/">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="j-footer__top-nav j-footer__top-nav--mobile-display">
+        <div class="j-footer__navigation j-footer__navigation-primary">
+            <ul>
+                <li class="first"><a href="https://www.jobs.ac.uk/">Find a Job</a></li>
+                <li><a href="https://www.jobs.ac.uk/phd">Find PhDs</a></li>
+                <li><a href="https://career-advice.jobs.ac.uk">Career Advice</a></li>
+                <li><a href="https://account.jobs.ac.uk/jobs-by-email/">Jobs by Email</a></li>
+                <li><a href="https://www.jobs.ac.uk/recruiters/">Advertise a Job</a></li>
+            </ul>
+        </div>
+        <div class="j-footer__navigation j-footer__navigation-secondary">
+            <ul>
+                <li><a href="https://www.jobs.ac.uk/about/">About Us</a></li>
+                <li><a href="https://www.jobs.ac.uk/about/contact/">Contact Us</a></li>
+            </ul>
+        </div>
+        <div class="j-footer__third j-footer__third--mobile-display">
+            <ul>
+                <li><a href="https://www.jobs.ac.uk/legal/terms-and-conditions/">Terms of use</a></li>
+                <li><a href="https://www.jobs.ac.uk/legal/privacy-policy/">Privacy Policy</a></li>
+                <li><a href="https://www.jobs.ac.uk/legal/cookie-policy">Cookie Policy</a></li>
+                <li><a href="https://www.jobs.ac.uk/legal/accessibility">Accessibility Statement</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="j-footer__third j-footer__third--display column-2">
+        <ul class="row-1">
+            <li><a href="https://www.jobs.ac.uk/legal/terms-and-conditions/">Terms of use</a></li>
+            <li><a href="https://www.jobs.ac.uk/legal/privacy-policy/">Privacy Policy</a></li>
+            <li><a href="https://www.jobs.ac.uk/legal/cookie-policy">Cookie Policy</a></li>
+            <li><a href="https://www.jobs.ac.uk/legal/accessibility">Accessibility Statement</a></li>
+        </ul>
+        <p class="j-footer__copyright j-footer__copyright--display row-2">
+            <small>Copyright &copy; jobs.ac.uk 1998 - 2026</small>
+        </p>
+    </div>
+</div>
+
+<script>
+    if (document.body.contains(document.getElementById('recaptchaV2Form'))) {
+        var siteKey = '';
+        var recaptchaV2ErrorMsg = '';
+    }
+</script>
+
+    <script type="text/javascript">
+        var reference = "DSL052";
+        var institution_name = "Loughborough University";
+        var job_title = "Lecturer or Senior Lecturer in Thermohydraulics";
+        var source = "site";
+        var uuid = "undefined";
+    </script>
+
+    <!-- Google Code for Got to a Job 2013 Conversion Page --> <script type="text/javascript">
+    /* <![CDATA[ */
+    var google_conversion_id = 1071910598;
+    var google_conversion_language = "en";
+    var google_conversion_format = "3";
+    var google_conversion_color = "ffffff";
+    var google_conversion_label = "rYzdCKv3lAQQxp2Q_wM";
+    var google_conversion_value = 0;
+    /* ]]> */
+</script>
+    <script type="text/javascript"
+            src="//www.googleadservices.com/pagead/conversion.js">
+    </script>
+    <noscript>
+        <div style="display:inline;">
+            <img height="1" width="1" style="border-style:none;" alt=""
+                 src="//www.googleadservices.com/pagead/conversion/1071910598/?value=0&label=rYzdCKv3lAQQxp2Q_wM&guid=ON&script=0"/>
+        </div>
+    </noscript>
+
+<button name="ie11-trigger" type="button" style="display: none;">IE11 Trigger</button>
+<div class="j-modal" data-trigger='button[name="ie11-trigger"]'>
+    <div class="j-modal__header" style="display: inline-block; width: 100%;">
+        <p class="browser-upgrade-title" style="float: left;">Browser Upgrade Recommended</p>
+        <div class="j-form-input ie-11-width" style="float: right;">
+            <input name="submit" type="submit" value="&#xf00d;" style="font-family: FontAwesome;">
+        </div>
+    </div>
+    <div class="j-modal__body">
+        <p>
+            jobs.ac.uk has been optimised for the latest browsers.
+        <p>
+            For the best user experience, we recommend viewing jobs.ac.uk on one of the following:
+        </p>
+        <div style="text-align: center;">
+            <a href="https://www.google.co.uk/chrome/" target="_blank">
+                <img src="/images/browser-logos/chrome-logo.svg" class="j-image" style="max-height: 5rem;" alt="Google Chrome" title="Google Chrome">
+            </a>
+            <a href="https://www.mozilla.org/en-GB/firefox/new/" target="_blank">
+                <img src="/images/browser-logos/firefox-logo.svg" class="j-image" style="max-height: 5rem;" alt="Firefox" title="Firefox">
+            </a>
+            <a href="https://www.microsoft.com/en-gb/windows/microsoft-edge" target="_blank">
+                <img src="/images/browser-logos/edge-logo.svg" class="j-image" style="max-height: 5rem;" alt="Microsoft Edge" title="Microsoft Edge">
+            </a>
+        </div>
+        <div class="j-form-input ie-11-width">
+            <input name="submit" type="submit" value="OK">
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{{ source.title if source else name }} · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">{{ source.title if source else name }}</h1>
+
+  <div class="bar">
+    {% set tab = 'sources' %}{% include "tabs.html" %}
+    {% if source and source.enabled and not source.not_pollable %}
+    <form method="post" action="{{ url_for('poll', name=name) }}" data-busy="Polling…">
+      <button type="submit" class="add">Poll now</button>
+    </form>
+    {% endif %}
+    {% if source %}
+    <form method="post" action="{{ url_for('derive_again', name=name) }}" data-busy="Deriving…"
+          data-busy-note="Exploring the site again. Nothing is written until you accept the difference.">
+      <button type="submit" class="add quiet">Derive again</button>
+    </form>
+    <form method="post" action="{{ url_for('set_enabled', name=name) }}">
+      <input type="hidden" name="enabled" value="{{ 'false' if source.enabled else 'true' }}">
+      <button type="submit" class="add quiet">{{ "Disable" if source.enabled else "Enable" }}</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <p class="busy-note" role="status"></p>
+
+  {% include "notes.html" %}
+
+  {% if problem %}
+  <div class="note" role="alert">
+    <p><strong>This Source cannot be read.</strong> {{ problem.reason }}. Fix it below.</p>
+  </div>
+  {% endif %}
+
+  {% if rederivation %}
+  <div class="cmd-section form-group">
+    <h2 class="modal-title form-group">The config, derived again</h2>
+    {% if not rederivation.difference %}
+    <p class="note form-group">Deriving the config again came to the file as it is. There is
+      nothing to accept.</p>
+    {% else %}
+    <p class="note form-group">
+      {% if rederivation.same_way %}The Postings would be reached and read the way they already
+      are, so whatever is wrong with this Source is not its config.{% endif %}
+      Nothing has been written. The file changes only if you accept the difference below; what the
+      file held that a config cannot carry, a comment above all, is lost with it.</p>
+    <pre class="cmd-block all form-group">
+{%- for line in rederivation.difference %}
+{% if line.startswith("-") %}<del>{{ line }}</del>{% elif line.startswith("+") %}<ins>{{ line }}</ins>{% else %}{{ line }}{% endif %}
+{%- endfor %}
+</pre>
+    <div class="bar">
+      <form method="post" action="{{ url_for('accept_derived', name=name) }}">
+        <input type="hidden" name="proposed" value="{{ rederivation.proposed }}">
+        <input type="hidden" name="base" value="{{ rederivation.base }}">
+        <button type="submit" class="add">Accept</button>
+      </form>
+      <a class="add quiet" href="{{ url_for('source', name=name) }}">Reject</a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if source %}
+  <div class="portal-card form-group">
+    <div class="field">
+      <div class="field-label">URL</div>
+      <div class="field-val"><a href="{{ source.url }}" rel="noreferrer">{{ source.url }}</a></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Polling</div>
+      <div class="field-val">
+        {% if not source.enabled %}Disabled. Everything kept for it stays.
+        {% elif source.not_pollable %}Cannot be polled: {{ source.not_pollable }}.
+        {% else %}Enabled{% endif %}
+      </div>
+    </div>
+    {% if health %}
+    <div class="field">
+      <div class="field-label">Health</div>
+      <div class="field-val">
+        <span class="badge {{ health_badges[health.condition] }}">{{ health.condition.value|capitalize }}</span>
+        {% if health.reason %}{{ health.reason[0]|upper }}{{ health.reason[1:] }}.{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="field">
+      <div class="field-label">Last poll</div>
+      <div class="field-val">
+        {% if not poll %}Never polled.
+        {% else %}{{ poll.polled.strftime("%Y-%m-%d %H:%M") }}:
+        {{ poll.postings }} {{ "Posting" if poll.postings == 1 else "Postings" }}{% if poll.rejected %}
+        and {{ poll.rejected }} removed by this Source's filter rules{% endif %}, {{ poll.new }} new,
+        {{ poll.changed }} changed.
+        {% endif %}
+      </div>
+    </div>
+    <div class="field">
+      <div class="field-label">Derived</div>
+      <div class="field-val">
+        {% if source.provenance.derived %}{{ source.provenance.derived.strftime("%Y-%m-%d %H:%M") }}{% else %}by hand{% endif %}{% if source.provenance.model %},
+        by {{ source.provenance.model }}{% endif %}{% if source.provenance.schema %},
+        config schema {{ source.provenance.schema }}{% endif %}
+      </div>
+    </div>
+    {% if source.contacts %}
+    <div class="field">
+      <div class="field-label">Contacts</div>
+      <div class="field-val">{{ source.contacts|join(", ") }}</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if poll and poll.errors %}
+  <div class="note" role="alert">
+    <p><strong>The last poll could not read everything.</strong></p>
+    <ul>
+      {% for error in poll.errors %}
+      <li>{% if error.url %}<span class="mono">{{ error.url }}</span>: {% endif %}{{ error.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if kept.problems %}
+  <div class="note" role="alert">
+    <p><strong>{{ kept.problems|length }} Posting {{ "file" if kept.problems|length == 1 else "files" }} could not be read.</strong>
+      Fix the file by hand and reload.</p>
+    <ul>
+      {% for problem in kept.problems %}
+      <li><span class="mono">postings/{{ name }}/{{ problem.name }}.yaml</span>: {{ problem.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if kept.postings %}
+  <div class="panel on form-group">
+    <table id="postings-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Role</th>
+          <th>Location</th>
+          <th>Deadline</th>
+          <th>First seen</th>
+          <th>Last seen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for posting in kept.postings %}
+        <tr>
+          <td class="col-company">{{ posting.company }}</td>
+          <td class="col-position">
+            {% if posting.url %}<a href="{{ posting.url }}" rel="noreferrer">{{ posting.role }}</a>{% else %}{{ posting.role }}{% endif %}
+            {% if posting.rejected %}<div class="note">Removed by this Source's filter rules: {{ posting.rejected }}.</div>{% endif %}
+          </td>
+          <td class="col-position">{{ posting.location or "" }}</td>
+          <td class="col-date" data-label="Deadline">
+            {%- if posting.deadline %}{{ posting.deadline.isoformat() }}{% endif %}
+            {%- if posting.expired(today) %} <span class="badge badge-closed">Expired</span>{% endif -%}
+          </td>
+          <td class="col-date" data-label="First seen">{% if posting.first_seen %}{{ posting.first_seen.strftime("%Y-%m-%d") }}{% endif %}</td>
+          <td class="col-date" data-label="Last seen">{% if posting.last_seen %}{{ posting.last_seen.strftime("%Y-%m-%d") }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('save', name=name) }}">
+    <div class="form-group">
+      <label class="form-label" for="text"><span class="mono">sources/{{ name }}.yaml</span></label>
+      <textarea class="form-input code" id="text" name="text" rows="{{ [text.count('\n') + 2, 12]|max }}"
+                spellcheck="false">{{ text }}</textarea>
+    </div>
+    <p class="note form-group">The file is the Source. An edit takes effect at the next poll; nothing
+      is derived again.</p>
+    <button type="submit" class="add">Save</button>
+  </form>
+  {% endblock %}

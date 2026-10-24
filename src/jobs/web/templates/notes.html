@@ -1,0 +1,12 @@
+  {% if refusal and not entered %}
+  <div class="note" role="alert">
+    <p><strong>Not done.</strong> {{ refusal }}</p>
+  </div>
+  {% endif %}
+
+  {% if not_pushed %}
+  <div class="note" role="alert">
+    <p><strong>Not pushed.</strong> There are changes committed on this server that the data
+      repository does not have: {{ not_pushed }}</p>
+  </div>
+  {% endif %}

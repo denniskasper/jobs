@@ -1,0 +1,761 @@
+/* ═══════════════════════════════════════════════════════════
+   Job search
+   A desk for correspondence. The ground is the grey of recycled office
+   paper; what is written on is a white sheet; the writing is royal blue
+   ink, and what is struck out is struck out in red pencil. The lettering
+   is the kind forms and file labels are set in, and only the Letter is
+   set like a letter.
+   Written for a phone first: one column, the pages within reach of a
+   thumb, every control big enough to hit. A wider screen adds columns;
+   it takes nothing away.
+   Status colours are validated (dataviz six-checks): CVD-separated,
+   and every colour ships with a text label, never colour alone.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  --ground:     #ECEDE7;   /* recycled paper: the desk everything lies on */
+  --sheet:      #FCFCFA;   /* a white sheet: fields, the Letter, what is lifted off the desk */
+  --ink:        #1A2238;   /* blue-black, for what is read */
+  --ink-2:      #454C5E;   /* graphite */
+  --ink-3:      #5E6575;   /* graphite, lightly */
+  --hair:       #CFD1C8;
+  --hair-soft:  #DCDED6;
+  --accent:     #2338B8;   /* royal blue ink: links, and what a Revision writes in */
+  --accent-soft:rgba(35, 56, 184, 0.12);
+  --strike:     #B3261E;   /* red pencil: what a Revision strikes out, and what went wrong */
+
+  /* status — fixed, never themed */
+  --st-interview: #0CA30C;
+  --st-waiting:   #2A78D6;
+  --st-todo:      #FAB219;
+  --st-todo-ring: #8A6000;   /* light-mode relief for the low-contrast amber */
+  --st-past:      #5E6575;
+
+  --lift: 0 1px 1px rgba(26, 34, 56, 0.06), 0 10px 24px -14px rgba(26, 34, 56, 0.22);
+
+  --label: 'Barlow Semi Condensed', 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  --text:  'Barlow', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --letter:'Vollkorn', 'Iowan Old Style', Georgia, serif;
+  --code:  ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* A finger needs this much; a pointer, further down, gets by with less. */
+  --hit: 44px;
+  --gutter: 16px;
+  /* The pages, along the bottom edge of a phone. */
+  --pages: 58px;
+  --below: env(safe-area-inset-bottom, 0px);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ground:     #15171D;
+  --sheet:      #1E2129;
+  --ink:        #E6E8F0;
+  --ink-2:      #B0B6C4;
+  --ink-3:      #8A91A1;
+  --hair:       #343946;
+  --hair-soft:  #272B35;
+  --accent:     #9AABFF;
+  --accent-soft:rgba(154, 171, 255, 0.16);
+  --strike:     #FF8E7F;
+
+  --st-waiting:   #3987E5;
+  --st-todo-ring: #FAB219;
+  --st-past:      #8A91A1;
+
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Everything numeric lines up in columns, in the lettering everything else is in. */
+.mono, .col-date {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Only a file as it is on disk is set in a typewriter's. */
+.cmd-block, .form-input.code { font-family: var(--code); }
+
+/* A path or an address is one long word, and may break anywhere. */
+.mono { overflow-wrap: anywhere; }
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+button { font: inherit; color: inherit; }
+
+.shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  /* Room under the last line for the pages along the bottom edge. */
+  padding: 14px var(--gutter) calc(var(--pages) + var(--below) + 24px);
+}
+
+/* ───────── top rail ───────── */
+
+.rail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+}
+
+.rail-name {
+  font-family: var(--label);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.rail-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.rail-date {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+/* ───────── headline ───────── */
+
+.lede {
+  font-family: var(--label);
+  font-size: clamp(34px, 3vw + 22px, 60px);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  margin: 0 0 16px;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── the pages, and what can be done on this one ───────── */
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Whatever stands in the bar keeps its distance from the page; an empty bar takes no room. */
+.bar > :not(.tabs) { margin-bottom: 20px; }
+
+.tabs { display: flex; gap: 26px; }
+
+.tab {
+  position: relative;
+  padding: 0 0 12px;
+  font-family: var(--label);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink-3);
+  text-decoration: none;
+  /* Never on a line of its own under its neighbour. */
+  white-space: nowrap;
+  transition: color 140ms ease;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 3px;
+  background: var(--ink);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.tab.on { color: var(--ink); font-weight: 600; }
+.tab.on::after { opacity: 1; }
+
+/* The pages along the bottom edge, where a thumb is. */
+.bar > .tabs {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 0 4px var(--below);
+  background: var(--sheet);
+  border-top: 1px solid var(--hair);
+}
+
+.bar > .tabs .tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--pages);
+  padding: 0;
+  font-size: clamp(14px, 4vw, 16px);
+}
+
+/* The mark of the page one is on sits against the edge the pages hang from. */
+.bar > .tabs .tab::after { top: -1px; bottom: auto; left: 14px; right: 14px; }
+
+/* The marker on the Sources tab: the dot of a badge, with its words for a screen reader only. */
+.tab-marker { gap: 0; margin-left: 0.4em; }
+
+/* The two views of a waiting Revision, its difference and the PDF it would make. */
+.views { margin-bottom: 16px; border-bottom: 1px solid var(--hair); }
+.views .tab { display: flex; align-items: center; min-height: var(--hit); padding: 0; }
+
+.add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--hit);
+  padding: 8px 18px;
+  background: var(--ink);
+  color: var(--ground);
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  font-family: var(--label);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 140ms ease;
+}
+
+/* The one that takes something back, beside the one that goes ahead. */
+.add.quiet { background: none; color: var(--ink); border-color: var(--ink-3); }
+
+/* A form that waits on the network or the model, while it does. */
+.add[aria-busy="true"] { opacity: 0.6; cursor: progress; }
+.add[aria-busy="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.55em;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+
+/* Still where motion is not wanted: the label alone says it. */
+@media (prefers-reduced-motion: no-preference) {
+  .add[aria-busy="true"]::before { animation: busy-turn 800ms linear infinite; }
+  @keyframes busy-turn { to { transform: rotate(360deg); } }
+}
+
+.busy-note { max-width: 68ch; font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+.busy-note:empty { display: none; }
+
+/* ───────── lists of things: a table on a wide screen, an entry each on a phone ───────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ground);
+  text-align: left;
+  font-family: var(--label);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  padding: 0 16px 10px 0;
+  border-bottom: 1px solid var(--hair);
+  white-space: nowrap;
+}
+
+tbody tr { border-bottom: 1px solid var(--hair); }
+
+tbody td {
+  padding: 14px 16px 14px 0;
+  vertical-align: top;
+}
+
+.col-company {
+  font-family: var(--label);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  width: 20%;
+  min-width: 150px;
+}
+
+/* The name is what is pressed, and reads as a name: the line under it says it leads on. */
+.col-company a { color: inherit; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+
+.col-position { color: var(--ink-2); width: 34%; }
+.col-date { width: 108px; color: var(--ink-3); font-size: 14px; white-space: nowrap; }
+.col-facts { width: 30%; min-width: 230px; }
+
+/* The Status of an Application, and the box that changes it, on one line. */
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.status-change { width: auto; min-height: 36px; padding: 4px 8px; }
+
+input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* What is ticked is pursued from wherever the list has been read to. */
+.pursue {
+  position: sticky;
+  bottom: calc(var(--pages) + var(--below) + 12px);
+  z-index: 3;
+  margin-top: 16px;
+}
+
+.pursue .add { width: 100%; box-shadow: var(--lift); }
+
+/* Stacked, and not the other way round with a wider screen undoing it: a table has to stop
+   being one, and taking that back rule for rule is how two of them come to cancel out. */
+@media (max-width: 859.98px) {
+  table, tbody { display: block; }
+  thead { display: none; }
+
+  tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px 14px;
+    padding: 14px 0;
+  }
+
+  tbody td { flex: 1 1 100%; min-width: 0; padding: 0; }
+  tbody td:empty { display: none; }
+
+  /* The short ones share a line; the last of them may sit at its end. */
+  tbody td.col-date, tbody td.fit { flex: 0 1 auto; white-space: normal; }
+  tbody td.end { margin-left: auto; }
+
+  .col-company, .col-position, .col-date, .col-facts { width: auto; min-width: 0; }
+  .col-company { font-size: 20px; line-height: 1.2; padding-bottom: 2px; }
+
+  /* With no column heads, a cell that needs one says what it holds. */
+  td[data-label]::before {
+    content: attr(data-label);
+    margin-right: 8px;
+    font-family: var(--label);
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  /* A Proposal: the box to tick down the side, everything about the Posting beside it. */
+  #proposals-table tbody tr {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 4px 0;
+  }
+  #proposals-table td { grid-column: 2; }
+  #proposals-table td.tick { grid-column: 1; grid-row: 1 / span 2; padding-top: 1px; }
+  #proposals-table td.end { justify-self: end; margin: 6px 0 0; }
+  #proposals-table .facts { margin-top: 8px; }
+}
+
+/* ───────── status badges — colour plus label, always ───────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--label);
+  font-size: 15px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: '';
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.badge-interview::before { background: var(--st-interview); }
+.badge-applied::before   { background: var(--st-waiting); }
+.badge-todo::before      { background: var(--st-todo); box-shadow: 0 0 0 1px var(--st-todo-ring); }
+.badge-closed::before    { box-shadow: inset 0 0 0 1.5px var(--ink-3); opacity: 0.6; }
+
+.badge-interview { color: var(--ink); font-weight: 600; }
+.badge-closed { color: var(--ink-3); }
+
+/* ───────── what the page says about itself ───────── */
+
+.note {
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.note strong { color: var(--ink); font-weight: 600; }
+
+/* What went wrong is marked down the margin in red pencil, the way a reader marks a page. */
+.note[role="alert"] { margin: 0 0 16px; padding: 2px 0 2px 12px; border-left: 3px solid var(--strike); color: var(--ink); }
+.note[role="alert"] p { margin: 0; }
+.note[role="alert"] ul { margin: 6px 0 0; }
+.note ul { padding-left: 20px; }
+
+.whole { white-space: pre-line; }
+details.note summary { cursor: pointer; }
+details.note .less, details.note[open] .extract { display: none; }
+details.note[open] .less { display: inline; color: var(--ink-3); }
+
+/* What is known of a Posting, a line each: on the Proposals page and on an Application's. */
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 0; font-size: 15px; line-height: 1.45; }
+.facts dt { font-family: var(--label); color: var(--ink-3); }
+.facts dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* ───────── one Source ───────── */
+
+.portal-card {
+  background: var(--sheet);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  box-shadow: var(--lift);
+  padding: 18px 18px 4px;
+}
+
+.field { padding-bottom: 14px; }
+
+.field-label {
+  display: block;
+  font-family: var(--label);
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-bottom: 3px;
+}
+
+.field-val {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.icon-btn {
+  min-height: 36px;
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid var(--ink-3);
+  border-radius: 6px;
+  font-family: var(--label);
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+/* Registrations, under "Register a Source": one line each. */
+.registrations { list-style: none; margin-left: 0; padding: 0; font-size: 15px; line-height: 1.5; }
+.registrations li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0.75em; padding: 0.4em 0; }
+.registration-title { font-family: var(--label); font-weight: 600; overflow-wrap: anywhere; }
+.registration-progress { color: var(--ink-2); }
+.registration-reason { flex-basis: 100%; max-width: 68ch; color: var(--ink-2); overflow-wrap: anywhere; }
+
+/* ───────── a new Application: a sheet from the bottom edge, a dialog on a wide screen ───────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(19, 21, 26, 0.34);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  width: 100%;
+  max-width: 620px;
+  padding-bottom: var(--below);
+  background: var(--sheet);
+  border: 1px solid var(--hair);
+  border-radius: 10px 10px 0 0;
+  box-shadow: var(--lift);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 10px 0 20px;
+}
+
+.modal-title { font-family: var(--label); font-size: 22px; font-weight: 600; line-height: 1.2; }
+
+.modal-close {
+  width: var(--hit); height: var(--hit);
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--ink-3);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.modal-body { padding: 14px 20px 22px; }
+
+/* ───────── forms ───────── */
+
+.form-group { margin-bottom: 16px; }
+
+.form-label {
+  display: block;
+  font-family: var(--label);
+  font-size: 15px;
+  color: var(--ink-2);
+  margin-bottom: 5px;
+}
+
+.form-input {
+  width: 100%;
+  min-height: var(--hit);
+  padding: 9px 12px;
+  background: var(--sheet);
+  border: 1px solid var(--ink-3);
+  border-radius: 4px;
+  font: inherit;
+  /* Sixteen, or a phone zooms into the field and leaves the page there. */
+  font-size: 16px;
+  color: var(--ink);
+  transition: border-color 140ms ease;
+}
+
+.form-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.form-input::placeholder { color: var(--ink-3); }
+
+/* A file as it is on disk: more of a line has to fit than a finger needs. */
+.form-input.code { font-size: 13px; line-height: 1.6; }
+
+.cmd-section { margin-top: 28px; }
+
+.cmd-block {
+  margin: 0;
+  padding: 14px 16px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--sheet);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* A config derived again, as a difference: all of it, however long. */
+.cmd-block.all { max-height: none; }
+.cmd-block ins { text-decoration: none; color: var(--accent); }
+.cmd-block del { text-decoration: none; color: var(--strike); }
+
+/* ───────── one Application: its Posting, its Letter, the Conversation about it ───────── */
+
+/* One under the other, so the way from one to the next stays in view while reading. */
+.jump {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 22px;
+  margin: 18px calc(-1 * var(--gutter)) 0;
+  padding: 0 var(--gutter);
+  background: var(--ground);
+  border-bottom: 1px solid var(--hair);
+}
+
+.jump a {
+  display: flex;
+  align-items: center;
+  min-height: var(--hit);
+  font-family: var(--label);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.application { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 24px; }
+/* Under the links that lead here, not behind them. */
+.application-part { scroll-margin-top: calc(var(--hit) + 16px); }
+.application-title { margin: 0 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--hair); font-family: var(--label); font-size: 22px; font-weight: 600; line-height: 1.2; }
+.posting-text { margin-top: 14px; font-size: 15px; line-height: 1.5; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.written { margin-top: 28px; }
+.written textarea { resize: vertical; line-height: 1.5; }
+
+/* Who the Application is with, how it stands, and since when. */
+.filed { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin: 0; color: var(--ink-2); }
+.filed-with { flex-basis: 100%; font-family: var(--label); font-size: 20px; font-weight: 500; line-height: 1.25; color: var(--ink); }
+
+/* The Letter: the one thing here that is set like a letter, on the one sheet that lies on the
+   desk. A Revision is read on it the way a marked-up page is: what it writes in is in ink, what
+   it strikes out is struck out in red pencil. */
+.letter-body, .difference {
+  padding: 26px 20px 30px;
+  background: var(--sheet);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  box-shadow: var(--lift);
+  font-family: var(--letter);
+  font-size: 17px;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+.letter-body, .difference p { white-space: pre-wrap; }
+.difference p { margin: 0 0 1em; }
+.difference p:last-child { margin-bottom: 0; }
+.difference ins { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.difference del { color: var(--strike); text-decoration-thickness: 1px; }
+.letter-pdf { display: block; width: 100%; aspect-ratio: 210 / 297; border: 1px solid var(--hair); background: #fff; box-shadow: var(--lift); }
+
+/* Accept and Reject, side by side under the difference, half the width each. */
+.decide { display: flex; gap: 10px; margin-top: 20px; }
+.decide form { flex: 1; }
+.decide .add { width: 100%; }
+
+/* The box in which the Letter is edited by hand, behind its switch. */
+.by-hand, .as-text { margin-top: 20px; font-family: var(--label); font-size: 16px; }
+.by-hand summary, .as-text summary { display: flex; align-items: center; min-height: var(--hit); cursor: pointer; color: var(--ink-2); }
+.by-hand summary::before, .as-text summary::before { content: '+'; width: 1.2em; color: var(--ink-3); }
+.by-hand[open] summary::before, .as-text[open] summary::before { content: '−'; }
+.by-hand summary::-webkit-details-marker, .as-text summary::-webkit-details-marker { display: none; }
+.by-hand .written, .as-text .letter-body { margin-top: 6px; }
+.by-hand .written { font-family: var(--text); }
+
+.conversation { list-style: none; margin: 0; padding: 0; font-size: 15px; line-height: 1.5; }
+.message { padding: 0 0 14px; }
+.message-from { font-family: var(--label); font-size: 14px; color: var(--ink-3); }
+/* What became of the Revision an answer carried, set off from who said it. */
+.message-revision { margin-left: 10px; color: var(--ink-2); font-weight: 500; }
+.message-text { color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ───────── under every page: whose it is, and which version is running ───────── */
+
+/* Closes the page the way the rail opens it: a name at one end, a figure at the other. */
+.footer { display: flex; justify-content: flex-end; margin-top: 48px; padding: 14px 0 8px; border-top: 1px solid var(--hair); font-size: 14px; color: var(--ink-3); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ───────── a wide screen: columns, and a pointer instead of a finger ───────── */
+
+@media (min-width: 860px) {
+  :root { --hit: 36px; --gutter: 40px; }
+
+  .shell { padding: 28px var(--gutter) 96px; }
+  .rail { padding-bottom: 56px; }
+  .lede { max-width: 24ch; margin-bottom: 22px; }
+
+  /* The pages along the top again, with what can be done here at their right. */
+  .bar {
+    align-items: flex-end;
+    gap: 8px 12px;
+    border-bottom: 1px solid var(--hair);
+    margin-bottom: 22px;
+  }
+  .bar > :not(.tabs) { margin-bottom: 8px; }
+
+  .bar > .tabs {
+    position: static;
+    display: flex;
+    gap: 26px;
+    margin-right: auto;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+
+  .bar > .tabs .tab { display: block; min-height: 0; padding: 0 0 12px; font-size: 17px; }
+  .bar > .tabs .tab::after { top: auto; bottom: -1px; left: 0; right: 0; }
+
+  .add { padding: 6px 16px; font-size: 15px; }
+  .icon-btn { min-height: 0; padding: 2px 10px; font-size: 14px; }
+  .form-input { font-size: 15px; }
+  .form-input.code { font-size: 12px; }
+  .status-change { min-height: 0; padding: 3px 6px; font-size: 14px; }
+  input[type="checkbox"] { width: 16px; height: 16px; }
+
+  /* The end of the list is in reach here. */
+  .pursue { position: static; }
+  .pursue .add { width: auto; box-shadow: none; }
+
+  .portal-card { padding: 22px 24px 8px; }
+  .field { padding-bottom: 16px; }
+
+  .modal-overlay { align-items: flex-start; padding: 8vh 20px 20px; }
+  .modal { padding-bottom: 0; border-radius: 4px; }
+  .modal-header { padding: 20px 24px 0; }
+  .modal-close { width: 30px; height: 30px; }
+  .modal-body { padding: 20px 24px 24px; }
+
+  .decide form { flex: none; }
+  .letter-body, .difference { padding: 36px 40px 40px; }
+}
+
+/* Three parts side by side, the Letter widest, and all three in view at once. */
+@media (min-width: 1000px) {
+  .jump { display: none; }
+  .application { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 32px; margin-top: 28px; }
+  .posting-text { max-height: 32em; overflow: auto; }
+}
+
+/* What only a pointer can do. */
+@media (hover: hover) {
+  .tab:hover { color: var(--ink-2); }
+  .add:hover { opacity: 0.85; }
+  .icon-btn:hover { border-color: var(--ink-3); color: var(--ink); }
+  .modal-close:hover { background: var(--hair-soft); color: var(--ink); }
+  .jump a:hover { color: var(--ink); }
+  tbody tr:hover { background: var(--hair-soft); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

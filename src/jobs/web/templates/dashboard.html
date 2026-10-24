@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block shell %}
+  <h1 class="lede">Applications</h1>
+
+  <div class="bar">
+    {% set tab = 'applications' %}{% include "tabs.html" %}
+    <button type="button" class="add" id="new-application-open">New Application</button>
+  </div>
+
+  {% include "notes.html" %}
+
+  {% if problems %}
+  <div class="note" role="alert">
+    <p><strong>{{ problems|length }} Application {{ "record" if problems|length == 1 else "records" }} could not be read.</strong>
+      Fix the file by hand and reload.</p>
+    <ul>
+      {% for problem in problems %}
+      <li><span class="mono">{{ problem.folder }}</span>: {{ problem.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="panel on">
+    {% if not applications %}
+    <p class="note">No Applications yet.</p>
+    {% else %}
+    <table id="apps-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Role</th>
+          <th>Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for application in applications %}
+        <tr>
+          <td class="col-company"><a href="{{ url_for('application', folder=application.folder) }}">{{ application.company }}</a></td>
+          <td class="col-position">{{ application.role }}</td>
+          <td class="col-date">{{ application.date.isoformat() }}</td>
+          <td class="fit end status">
+            <span class="badge {{ status_badges[application.status] }}">{{ application.status.label }}</span>
+            {# The options are the Status values as written in the record, so the label above
+               stays the only place the current Status is spelled out. #}
+            <form method="post" action="{{ url_for('set_status', folder=application.folder) }}">
+              <select name="status" class="form-input status-change"
+                      aria-label="Change the Status of {{ application.company }}, {{ application.role }}"
+                      onchange="this.form.submit()">
+                <option value="" selected disabled>change…</option>
+                {% for status in statuses if status != application.status %}
+                <option value="{{ status.value }}">{{ status.value }}</option>
+                {% endfor %}
+              </select>
+              <noscript><button type="submit" class="icon-btn">Set</button></noscript>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endblock %}
+
+{% block after %}
+<div class="modal-overlay{% if entered %} open{% endif %}" id="new-application">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-application-title">
+    <div class="modal-header">
+      <span class="modal-title" id="new-application-title">New Application</span>
+      <button type="button" class="modal-close" id="new-application-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      {% if refusal %}
+      <div class="note form-group" role="alert">
+        <p><strong>Not done.</strong> {{ refusal }}</p>
+      </div>
+      {% endif %}
+      <form method="post" action="{{ url_for('create') }}">
+        <div class="form-group">
+          <label class="form-label" for="company">Company</label>
+          <input class="form-input" id="company" name="company" required value="{{ entered.company }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="role">Role</label>
+          <input class="form-input" id="role" name="role" required value="{{ entered.role }}">
+        </div>
+        <p class="note form-group">Starts at To do, dated {{ today.isoformat() }}. No Posting is needed.</p>
+        <button type="submit" class="add">Create</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var overlay = document.getElementById('new-application');
+    document.getElementById('new-application-open').addEventListener('click', function () {
+      overlay.classList.add('open');
+      document.getElementById('company').focus();
+    });
+    document.getElementById('new-application-close').addEventListener('click', function () {
+      overlay.classList.remove('open');
+    });
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) overlay.classList.remove('open');
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') overlay.classList.remove('open');
+    });
+  })();
+</script>
+{% endblock %}

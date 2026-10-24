@@ -1,0 +1,25 @@
+# Runs the image on this machine against the store in ./data, as whoever starts it, so the
+# commits the service makes in ./data belong to the same user as the rest of it.
+#
+#   mkdir -p data && JOBS_UID=$(id -u) JOBS_GID=$(id -g) docker compose up --build
+#
+# ./data must exist first, or Docker creates it as root. DATA_REPO_URL is deliberately unset:
+# ./data is a repository of its own, which the first start creates when the directory is empty,
+# and nothing is pushed from it.
+services:
+  jobs:
+    build: .
+    user: "${JOBS_UID:-1000}:${JOBS_GID:-1000}"
+    ports:
+      - "127.0.0.1:8000:8000"
+    # Passed through from the shell that starts it, and left out of the container when unset there:
+    # without the credential everything that does not ask a model still works, and an unset model
+    # falls back to its default.
+    environment:
+      - CLAUDE_CODE_OAUTH_TOKEN
+      - MODEL
+      - PROSE_MODEL
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true

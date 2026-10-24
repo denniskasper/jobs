@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application.role }}, {{ application.company }} · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">{{ application.role }}</h1>
+
+  <div class="bar">
+    {% set tab = 'applications' %}{% include "tabs.html" %}
+  </div>
+
+  {% include "notes.html" %}
+
+  <p class="filed">
+    <span class="filed-with">{{ application.company }}</span>
+    <span class="badge {{ status_badges[application.status] }}">{{ application.status.label }}</span>
+    <span class="mono">since {{ application.date.isoformat() }}</span>
+  </p>
+
+  <nav class="jump" aria-label="On this page">
+    <a href="#posting">Posting</a>
+    <a href="#letter">Letter</a>
+    <a href="#conversation">Conversation</a>
+  </nav>
+
+  <div class="application">
+    <section class="application-part" id="posting" aria-labelledby="posting-title">
+      <h2 class="application-title" id="posting-title">Posting</h2>
+      {% if posting_problem %}
+      <p class="note" role="alert"><strong>The Posting could not be read.</strong>
+        {{ posting_problem }}. Fix <span class="mono">posting.yaml</span> by hand and reload.</p>
+      {% elif not posting %}
+      <p class="note">This Application holds no Posting.</p>
+      {% else %}
+      <dl class="facts">
+        <dt>Role</dt>
+        <dd>{% if posting.url %}<a href="{{ posting.url }}" rel="noreferrer" target="_blank">{{ posting.role }}</a>{% else %}{{ posting.role }}{% endif %}</dd>
+        <dt>Company</dt><dd>{{ posting.company }}</dd>
+        {% if posting.location %}<dt>Location</dt><dd>{{ posting.location }}</dd>{% endif %}
+        {% if posting.deadline %}<dt>Deadline</dt><dd class="mono">{{ posting.deadline.isoformat() }}</dd>{% endif %}
+        {% if posting.pay %}<dt>Pay</dt><dd>{{ posting.pay }}</dd>{% endif %}
+        {% if posting.identifier %}<dt>Reference</dt><dd class="mono">{{ posting.identifier }}</dd>{% endif %}
+        {% if posting.posted %}<dt>Posted</dt><dd class="mono">{{ posting.posted.isoformat() }}</dd>{% endif %}
+      </dl>
+      {% if posting.description %}
+      <div class="posting-text">{{ posting.description }}</div>
+      {% else %}
+      <p class="note">The Posting was kept without a description.</p>
+      {% endif %}
+      {% endif %}
+
+      <form method="post" action="{{ url_for('save_application', folder=application.folder) }}" class="written">
+        <div class="form-group">
+          <label class="form-label" for="notes">Notes</label>
+          <textarea class="form-input" id="notes" name="notes"
+                    rows="{{ [application.notes.count('\n') + 2, 6]|max }}">{{ application.notes }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="address">Employer's address</label>
+          <textarea class="form-input" id="address" name="address" autocomplete="off"
+                    rows="{{ [application.address.count('\n') + 2, 5]|max }}">{{ application.address }}</textarea>
+          <p class="note">Kept line for line as typed.</p>
+        </div>
+        <button type="submit" class="add">Save</button>
+      </form>
+    </section>
+
+    <section class="application-part" id="letter" aria-labelledby="letter-title">
+      <h2 class="application-title" id="letter-title">Letter</h2>
+      {% if standing.problem %}
+      <p class="note" role="alert"><strong>The Letter could not be read.</strong>
+        See the Conversation.</p>
+      {% elif standing.difference is not none %}
+      {% set page = url_for('application', folder=application.folder) %}
+      <nav class="tabs views" aria-label="The waiting Revision">
+        <a class="tab{% if not previewed %} on{% endif %}"{% if not previewed %} aria-current="true"{% endif %} href="{{ page }}#letter">Difference</a>
+        <a class="tab{% if previewed %} on{% endif %}"{% if previewed %} aria-current="true"{% endif %} href="{{ page }}?{{ view_param }}={{ preview_view }}#letter">Preview</a>
+      </nav>
+      {% if previewed and prints %}
+      <iframe class="letter-pdf" src="{{ url_for('revision_pdf', folder=application.folder) }}"
+              title="The waiting Revision as a PDF"></iframe>
+      {# A phone's browser often shows no PDF inside a page. #}
+      <p class="note"><a href="{{ url_for('revision_pdf', folder=application.folder) }}" target="_blank">Open the PDF</a></p>
+      <p class="note">{% if not standing.read_only %}A Revision is waiting. This is the PDF it would make today, built as you look
+        at it and kept nowhere, and the Letter stays as it is until you accept.{% else %}A Revision was waiting when the Status changed, and stays undecided. This is the PDF it
+        would make today, built as you look at it and kept nowhere.{% endif %}</p>
+      {% else %}
+      {% if previewed %}
+      <p class="note" role="status">{{ no_printer }}</p>
+      {% endif %}
+      <p class="note">{% if not standing.read_only %}A Revision is waiting. What it adds is marked, what it removes is struck
+        through, and the Letter stays as it is until you accept.{% else %}A Revision was waiting when the Status changed, and stays undecided. What it adds is
+        marked, what it removes is struck through.{% endif %}</p>
+      <div class="difference">
+        {%- for paragraph in standing.difference %}
+        <p>{% for span in paragraph %}{% if span.change == 'added' %}<ins>{{ span.text }}</ins>{% elif span.change == 'removed' %}<del>{{ span.text }}</del>{% else %}{{ span.text }}{% endif %}{% endfor %}</p>
+        {%- endfor %}
+      </div>
+      {% endif %}
+      {% if not standing.read_only %}
+      <div class="decide">
+        <form method="post" action="{{ url_for('accept_revision', folder=application.folder) }}">
+          <button type="submit" class="add">Accept</button>
+        </form>
+        <form method="post" action="{{ url_for('reject_revision', folder=application.folder) }}">
+          <button type="submit" class="add quiet">Reject</button>
+        </form>
+      </div>
+      {% endif %}
+      {% elif standing.letter %}
+      {% if prints %}
+      <iframe class="letter-pdf" src="{{ url_for('letter_pdf', folder=application.folder) }}"
+              title="The Letter as a PDF"></iframe>
+      {# A phone's browser often shows no PDF inside a page. #}
+      <p class="note"><a href="{{ url_for('letter_pdf', folder=application.folder) }}" target="_blank">Open the PDF</a></p>
+      <p class="note">The Letter as the PDF it makes today, built as you look at it and kept
+        nowhere.</p>
+      <details class="as-text">
+        <summary>Read as text</summary>
+        <div class="letter-body">{{ standing.letter }}</div>
+      </details>
+      {% else %}
+      <div class="letter-body">{{ standing.letter }}</div>
+      <p class="note" role="status">{{ no_printer }}</p>
+      {% endif %}
+      {% else %}
+      <p class="note">There is no Letter yet.</p>
+      {% if standing.first_version_can_be_asked_for %}
+      <form method="post" action="{{ url_for('ask_for_letter', folder=application.folder) }}">
+        <button type="submit" class="add">Ask for a first version</button>
+      </form>
+      {% endif %}
+      {% endif %}
+      {% if standing.read_only %}
+      <p class="note" role="status">{{ standing.read_only }}</p>
+      {% else %}
+      {% for sentence in standing.missing %}
+      <p class="note" role="status">{{ sentence }}</p>
+      {% endfor %}
+      {% endif %}
+      {% if not standing.read_only and (not standing.problem or typed is not none) %}
+      {% set body = standing.letter if typed is none else typed %}
+      <details class="by-hand"{% if typed is not none %} open{% endif %}>
+        <summary>Edit by hand</summary>
+        <form method="post" action="{{ url_for('edit_letter', folder=application.folder) }}" class="written">
+          <div class="form-group">
+            <label class="form-label" for="body">The body, as Markdown</label>
+            <textarea class="form-input" id="body" name="body" autocomplete="off"
+                      rows="{{ [body.count('\n') + 3, 12]|max }}">{{ body }}</textarea>
+            <p class="note">Saved as you wrote it, with no difference to accept. A Revision that
+              waits when you save is dropped.</p>
+          </div>
+          <button type="submit" class="add">Save</button>
+        </form>
+      </details>
+      {% endif %}
+    </section>
+
+    <section class="application-part" id="conversation" aria-labelledby="conversation-title">
+      <h2 class="application-title" id="conversation-title">Conversation</h2>
+      {% if standing.problem %}
+      <p class="note" role="alert"><strong>The Letter or its Conversation could not be read.</strong>
+        {{ standing.problem }}. Fix it by hand and reload.</p>
+      {% elif not standing.messages %}
+      <p class="note">Nothing has been asked yet.</p>
+      {% else %}
+      <ol class="conversation">
+        {% for message in standing.messages %}
+        <li class="message">
+          {% if message.note %}
+          <div class="message-from">{{ message.text }}</div>
+          {% else %}
+          <div class="message-from">{{ 'You' if message.author == 'applicant' else 'Model' }}
+            {%- if message.revision %} <span class="message-revision">Revision: {{ message.revision.value|capitalize }}</span>{% endif %}</div>
+          <div class="message-text">{{ message.text }}</div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% if standing.under_way %}
+      <p class="note" role="status">An answer is under way, which can take a few minutes. It
+        shows here once it has come, and you may leave this page in the meantime.</p>
+      {% elif standing.unanswered %}
+      <p class="note" role="alert">No answer came{% if standing.reason %}: {{ standing.reason }}{% endif %}.</p>
+      {% if not standing.read_only %}
+      <form method="post" action="{{ url_for('send_again', folder=application.folder) }}">
+        <button type="submit" class="add">Send again</button>
+      </form>
+      {% endif %}
+      {% endif %}
+      {% endif %}
+      {% if not standing.read_only and not standing.problem and not standing.under_way %}
+      <form method="post" action="{{ url_for('say_about_letter', folder=application.folder) }}" class="written">
+        <div class="form-group">
+          <label class="form-label" for="message">Message</label>
+          <textarea class="form-input" id="message" name="message" autocomplete="off" required
+                    rows="{{ [said.count('\n') + 2, 4]|max }}">{{ said }}</textarea>
+          <p class="note">{% if standing.difference is not none %}What should be different about the
+            Revision that waits. A body in the answer takes its place.{% else %}What the Letter should say, or what
+            should be different about it.{% endif %}</p>
+        </div>
+        <button type="submit" class="add">Send</button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}
+
+{% block after %}
+{% if keeps_up %}
+<script id="keeps-up">
+  // An answer is waiting or under way: ask for this page again every three seconds and take
+  // over its Letter and its Conversation. Nothing else is touched, so what was typed elsewhere
+  // and not saved stays, and with a field focused nothing is: never under the user's hands. Nor
+  // while the box for the Letter is open, which is one of the parts taken over.
+  (function () {
+    function typing() {
+      var focused = document.activeElement;
+      return (focused && focused.matches('input, textarea'))
+        || document.querySelector('#letter details[open]');
+    }
+    var asking = false;
+    var turns = setInterval(function () {
+      if (asking || typing()) return;
+      asking = true;
+      fetch(location.href).then(function (response) {
+        if (!response.ok) throw new Error(response.status);
+        return response.text();
+      }).then(function (markup) {
+        // Focused while the page was asked for: the next turn will do.
+        if (typing()) return;
+        var fresh = new DOMParser().parseFromString(markup, 'text/html');
+        ['letter', 'conversation'].forEach(function (part) {
+          var brought = fresh.getElementById(part);
+          if (brought) document.getElementById(part).replaceWith(brought);
+        });
+        if (!fresh.getElementById('keeps-up')) clearInterval(turns);
+      }).catch(function () {
+        // The service is away or restarting: the next turn asks again.
+      }).then(function () { asking = false; });
+    }, 3000);
+  })();
+</script>
+{% endif %}
+{% endblock %}

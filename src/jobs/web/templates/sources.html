@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Sources · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">Sources</h1>
+
+  <div class="bar">
+    {% set tab = 'sources' %}{% include "tabs.html" %}
+    {% if sources %}
+    <form method="post" action="{{ url_for('poll_all') }}" data-busy="Polling…"
+          data-busy-note="Walking every enabled Source in turn. This can take a few minutes.">
+      <button type="submit" class="add">Poll all now</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <p class="busy-note" role="status"></p>
+
+  {% include "notes.html" %}
+
+  {% if problems %}
+  <div class="note" role="alert">
+    <p><strong>{{ problems|length }} Source {{ "file" if problems|length == 1 else "files" }} could not be read.</strong>
+      Fix the file and reload.</p>
+    <ul>
+      {% for problem in problems %}
+      <li><a class="mono" href="{{ url_for('source', name=problem.name) }}">{{ problem.name }}</a>: {{ problem.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="panel on">
+    {% if not sources %}
+    <p class="note">No Sources yet.</p>
+    {% else %}
+    <table id="sources-table">
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Reached by</th>
+          <th>Keeps</th>
+          <th>Polling</th>
+          <th>Health</th>
+          <th>Last poll</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for source in sources %}
+        <tr>
+          <td class="col-company"><a href="{{ url_for('source', name=source.name) }}">{{ source.title }}</a></td>
+          <td class="col-position" data-label="Reached by">
+            {{ source.config.hops|length }} {{ "hop" if source.config.hops|length == 1 else "hops" }},
+            {{ source.config.strategy.value }}
+          </td>
+          <td class="col-position" data-label="Keeps">
+            {% for filter in source.config.filters %}
+            <span>{{ filter.rule or (filter.field ~ " matching " ~ filter.pattern) }}</span>{% if not loop.last %}<br>{% endif %}
+            {% else %}
+            everything
+            {% endfor %}
+          </td>
+          <td class="fit">
+            {% if not source.enabled %}
+            <span class="badge badge-closed">Disabled</span>
+            {% elif source.not_pollable %}
+            <span class="badge badge-todo">Cannot be polled</span>
+            {% else %}
+            <span class="badge badge-applied">Enabled</span>
+            {% endif %}
+          </td>
+          <td class="fit">
+            {% set its_health = health[source.name] %}
+            {% if its_health %}<span class="badge {{ health_badges[its_health.condition] }}">{{ its_health.condition.value|capitalize }}</span>{% endif %}
+          </td>
+          <td class="col-date" data-label="Last poll">
+            {% set poll = polls[source.name] %}
+            {% if poll %}{{ poll.polled.strftime("%Y-%m-%d %H:%M") }},
+            {{ poll.postings }} {{ "Posting" if poll.postings == 1 else "Postings" }}{% else %}never{% endif %}
+          </td>
+        </tr>
+        {% if source.enabled and source.not_pollable %}
+        <tr>
+          <td colspan="6" class="note">{{ source.not_pollable }}.</td>
+        </tr>
+        {% endif %}
+        {% if its_health and its_health.reason %}
+        <tr>
+          <td colspan="6" class="note">{{ its_health.condition.value|capitalize }}: {{ its_health.reason }}.</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="cmd-section">
+    <h2 class="modal-title form-group">Register a Source</h2>
+    {% if registrations %}
+    <ul id="registrations" class="registrations form-group">
+      {% for registration in registrations %}
+      <li>
+        <span class="registration-title">{{ registration.title }}</span>
+        <span class="badge {{ registration_badges[registration.state] }}">{{ registration.state.value|capitalize }}</span>
+        {% if registration.under_way_for is not none %}
+        <span class="registration-progress">for {{ registration.under_way_for_in_words }}</span>
+        {% elif registration.waiting %}
+        <span class="registration-progress">{{ registration.ahead ~ " ahead" if registration.ahead else "next in line" }}</span>
+        {% endif %}
+        {% if registration.source %}
+        <a href="{{ url_for('source', name=registration.source) }}">Check its config</a>
+        {% endif %}
+        {% if registration.refused %}
+        <a href="{{ url_for('sources').include_query_params(**registration.entered) }}">Try again</a>
+        {% endif %}
+        {% if registration.to_be_cleared %}
+        <form method="post" action="{{ url_for('clear_registration', identifier=registration.identifier) }}">
+          <button type="submit" class="icon-btn" aria-label="Clear {{ registration.title }}">Clear</button>
+        </form>
+        <span class="registration-reason">{{ registration.reason or registration.note }}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if refusal and entered %}
+    <div class="note form-group" role="alert">
+      <p><strong>Not registered.</strong> {{ refusal }}</p>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('register') }}">
+      <div class="form-group">
+        <label class="form-label" for="url">URL</label>
+        <input class="form-input" id="url" name="url" type="url" required value="{{ entered.url }}"
+               placeholder="https://…">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="label">Label, optional</label>
+        <input class="form-input" id="label" name="label" value="{{ entered.label }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rule">Keep only, in your own words, optional</label>
+        <input class="form-input" id="rule" name="rule" value="{{ entered.rule }}"
+               placeholder="only positions whose reference number ends in M8">
+      </div>
+      <p class="note form-group">The URL is explored once, in the background, which takes about
+        half a minute and asks a model. You may leave this page in the meantime. Polling never asks
+        a model.</p>
+      <button type="submit" class="add">Register</button>
+    </form>
+  </div>
+  {% endblock %}
+
+{% block after %}
+{% if asked_for_by_itself %}
+<script>
+  // Only the server was to know that the page asked for itself: reloading by hand is looking.
+  (function () {
+    var here = new URL(location.href);
+    here.searchParams.delete('{{ by_itself_param }}');
+    history.replaceState(null, '', here);
+  })();
+</script>
+{% endif %}
+{% if reloads_itself %}
+<script id="reloads-itself">
+  // A Registration is waiting or under way: look again every three seconds, but never take a
+  // form away from under the user's hands, nor interrupt one that is busy.
+  setInterval(function () {
+    var focused = document.activeElement;
+    if (focused && focused.matches('input, textarea')) return;
+    if (document.querySelector('form[data-busy-since]')) return;
+    var here = new URL(location.href);
+    here.searchParams.set('{{ by_itself_param }}', '1');
+    // A GET of this address, never a reload: a reload could hand a form in again.
+    location.replace(here);
+  }, 3000);
+</script>
+{% endif %}
+{% endblock %}

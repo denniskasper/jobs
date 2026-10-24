@@ -23,7 +23,9 @@ with the vector it came with. The institution stays real; only the people are in
 `tests/test_no_personal_data.py` enforces this. It is not a formality; if it fails, something
 personal is about to be committed.
 
-This repository stays private.
+This repository is public. Anyone can read its commits, issues and CI logs, so the deployment's
+own addresses — hosts, IPs, the tailnet's name — are never written there either: in CI they are
+secrets, which GitHub masks, and never variables, which it prints.
 
 ## Commits
 

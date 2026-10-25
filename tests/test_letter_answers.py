@@ -405,9 +405,10 @@ def test_the_page_shows_an_answer_when_it_arrives_but_never_under_the_users_hand
             ),
         )
         # The page's own clock, so that a turn passes when the test says so.
+        # Held before the page loads, however long that takes, and before its first turn.
         page.clock.install(time=0)
-        page.goto(f"{origin}{PAGE}")
         page.clock.pause_at(2)
+        page.goto(f"{origin}{PAGE}")
         asked_for.clear()
         model.answers.append(ANSWER)
         fetch_next_answer(dashboard)

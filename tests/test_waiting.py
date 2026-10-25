@@ -181,9 +181,10 @@ def test_the_sources_page_reloads_itself_but_not_under_the_users_hands(
         page.on("request", remember)
         # The page's own clock, so that a turn passes when the test says so.
         page.clock.install(time=0)
-        page.goto(f"{origin}/sources")
-        # Held two seconds in, in seconds, before the first turn: no turn passes by itself.
+        # Held two seconds in, in seconds, before the first turn: no turn passes by itself. Held
+        # before the page loads, so that however long it takes cannot carry the clock past that.
         page.clock.pause_at(2)
+        page.goto(f"{origin}/sources")
 
         # With a field focused a turn passes, and with a busy form another: no reload.
         page.focus("#label")

@@ -251,9 +251,10 @@ def test_an_answer_does_not_arrive_under_an_open_box(
     ask_for_a_first_version(dashboard)
     with in_the_browser(cast(Starlette, dashboard.app)) as (page, origin):
         # The page's own clock, so that a turn passes when the test says so.
+        # Held before the page loads, however long that takes, and before its first turn.
         page.clock.install(time=0)
-        page.goto(f"{origin}{PAGE}")
         page.clock.pause_at(2)
+        page.goto(f"{origin}{PAGE}")
         model.answers.append(ANSWER)
         fetch_next_answer(dashboard)
 

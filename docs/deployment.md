@@ -306,8 +306,9 @@ the job ends.
 
 ### What it costs
 
-For a private repository Actions minutes are metered. GitHub's Free plan includes **2,000 minutes
-a month**; Linux runners bill at 1x and each job is rounded up to the next minute.
+Nothing, for this repository: it is public, and a public repository's runs on standard
+GitHub-hosted runners are free. A private copy is metered: GitHub's Free plan includes **2,000
+minutes a month**; Linux runners bill at 1x and each job is rounded up to the next minute.
 
 | Push | Jobs | Roughly |
 |---|---|---|
@@ -315,7 +316,7 @@ a month**; Linux runners bill at 1x and each job is rounded up to the next minut
 | `main`, prose or tickets only | `checks`, `image-inputs` | 4-6 min |
 | `main`, touching `src/` or the Dockerfile | all four | 8-14 min |
 
-So a busy month of daily pushes sits near a tenth of the allowance. The image build dominates the
+So in a private copy a busy month of daily pushes sits near a tenth of the allowance. The image build dominates the
 `checks` job and is cached across runs; the rest is dependency installation.
 
 ### What none of it guarantees

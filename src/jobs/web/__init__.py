@@ -181,6 +181,8 @@ def create_app(
                 # Looked at here, after the Sources page has said what was seen: the page that
                 # shows how one ended is the one that says so, and its tab has nothing to add.
                 "sources_marker": _sources_marker(registrations.look()),
+                # Looked at after the Proposals page has shown them, which leaves none new there.
+                "proposals_new": proposing.look().new,
                 **context,
             },
             status_code=_status_code(refusal),

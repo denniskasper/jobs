@@ -115,6 +115,11 @@ class Listing:
     def held_back(self) -> int:
         return max(len(self.waiting) - self.room, 0)
 
+    @property
+    def new(self) -> int:
+        """How many the list would show for the first time, were it shown now."""
+        return min(len(self.waiting), self.room)
+
 
 def sort_out(data_dir: Path, now: datetime, relevance: Relevance | None = None) -> Listing:
     """Every kept Posting put where it belongs today. Nothing is written. `relevance` judges in

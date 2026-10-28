@@ -217,8 +217,10 @@ button { font: inherit; color: inherit; }
 /* The mark of the page one is on sits against the edge the pages hang from. */
 .bar > .tabs .tab::after { top: -1px; bottom: auto; left: 14px; right: 14px; }
 
-/* The marker on the Sources tab: the dot of a badge, with its words for a screen reader only. */
+/* The marker on a tab: the dot of a badge, with its words for a screen reader only. The one on
+   the Proposals tab adds how many are new. */
 .tab-marker { gap: 0; margin-left: 0.4em; }
+.tab-count { gap: 5px; font-size: 14px; font-variant-numeric: tabular-nums; }
 
 /* The two views of a waiting Revision, its difference and the PDF it would make. */
 .views { margin-bottom: 16px; border-bottom: 1px solid var(--hair); }

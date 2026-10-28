@@ -4,6 +4,8 @@ surface.
 Every Posting here is invented, as is every host.
 """
 
+import html
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -400,6 +402,71 @@ def test_a_poll_leaves_first_shown_where_it_is(
 
 def test_the_proposals_are_a_tab_beside_the_others(dashboard: TestClient) -> None:
     assert 'href="http://testserver/proposals"' in dashboard.get("/").text
+
+
+# Every page with tabs but the one that shows the list.
+ELSEWHERE = ["/", "/proposals/left-out", "/documents", "/sources"]
+
+
+def new_on(page: str) -> tuple[str, str] | None:
+    """What the Proposals tab says is new: the number it shows, and its words for a screen
+    reader."""
+    (tab,) = re.findall(r'<a class="tab[^"]*"[^>]*>\s*Proposals(.*?)</a>', page, re.DOTALL)
+    found = re.search(
+        r'<span class="badge badge-todo tab-marker tab-count">\s*'
+        r'<span aria-hidden="true">(\d+)</span>\s*'
+        r'<span class="visually-hidden">([^<]+)</span>\s*</span>',
+        tab,
+    )
+    return (found[1], html.unescape(found[2]).strip()) if found else None
+
+
+def test_what_the_list_would_show_for_the_first_time_is_counted_on_its_tab(
+    dashboard: TestClient, data_dir: Path
+) -> None:
+    first = write_posting(data_dir, "doctoral-researcher")
+    write_posting(data_dir, "laboratory-engineer")
+
+    for path in ELSEWHERE:
+        assert new_on(dashboard.get(path).text) == ("2", "2 new Proposals")
+    # Counting them shows none of them.
+    assert "first_shown" not in on_disk(first)
+
+    # The page that shows them is the one that says so: the tab has nothing to add.
+    assert new_on(dashboard.get("/proposals").text) is None
+    for path in ELSEWHERE:
+        assert new_on(dashboard.get(path).text) is None
+
+
+def test_one_new_proposal_is_counted_in_the_singular(dashboard: TestClient, data_dir: Path) -> None:
+    write_posting(data_dir, "doctoral-researcher")
+
+    assert new_on(dashboard.get("/").text) == ("1", "1 new Proposal")
+
+
+def test_what_the_cap_holds_back_is_not_new_until_the_day_it_would_be_shown(
+    dashboard: TestClient, data_dir: Path, clock: SettableClock
+) -> None:
+    write_settings(data_dir, "cap: 1\n")
+    write_posting(data_dir, "doctoral-researcher")
+    write_posting(data_dir, "laboratory-engineer")
+
+    assert new_on(dashboard.get("/").text) == ("1", "1 new Proposal")
+    dashboard.get("/proposals")
+    assert new_on(dashboard.get("/").text) is None
+
+    clock.now = NOW + DAY
+    assert new_on(dashboard.get("/").text) == ("1", "1 new Proposal")
+
+
+def test_what_the_rules_remove_is_not_new(dashboard: TestClient, data_dir: Path) -> None:
+    write_settings(data_dir, "exclude: [sales]\n")
+    write_posting(data_dir, "sales-engineer", description="Fluid dynamics sales.")
+
+    page = dashboard.get("/").text
+
+    assert new_on(page) is None
+    assert re.search(r'<a class="tab[^"]*"[^>]*>Proposals</a>', page)
 
 
 class OnlyEngineers:

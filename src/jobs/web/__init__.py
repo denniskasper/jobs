@@ -34,6 +34,9 @@ from jobs.applications import (
     Status,
     change_status,
     create_application,
+    give_text,
+    holding,
+    lacks_text,
     list_applications,
     posting_of,
     read_application,
@@ -309,15 +312,33 @@ def create_app(
         )
 
     def new_application(request: Request) -> Response:
-        # Opened filled in, by a share or a bookmark, it only shows the form: nothing is created
-        # until Create is pressed, and nothing is fetched at all.
+        # Opened filled in, by a share or a bookmark, it only shows the form, or leads to the
+        # Application its link is on record with: nothing is created until Create is pressed,
+        # nothing is saved until Save is, and nothing is fetched at all.
         query = request.query_params
-        entered = {field: query.get(field, "") for field in CREATE_FIELDS}
-        return render_new(
-            request,
-            guess.filled_in(entered, title=query.get("title", "")),
-            # The bookmark button says so when it cut the selection to fit in an address.
-            cut=CUT in query,
+        entered = guess.filled_in(
+            {field: query.get(field, "") for field in CREATE_FIELDS}, title=query.get("title", "")
+        )
+        if entered["link"].strip() and (holder := holding(data_dir, entered["link"])):
+            return lead_to(request, holder.folder, entered["text"])
+        # The bookmark button says so when it cut the selection to fit in an address.
+        return render_new(request, entered, cut=CUT in query)
+
+    def lead_to(request: Request, folder: str, text: str) -> Response:
+        """The Application a link brought in again belongs to. Its Posting, brought in without
+        a text, shows the field for one filled in with the text that came along, which nothing
+        saves until Save is pressed; any other drops that text."""
+        try:
+            takes_text = lacks_text(posting_of(data_dir, folder))
+        except Malformed:
+            takes_text = False
+        if takes_text and text.strip():
+            # Shown here and not at the Application's address, which a text that came in a
+            # form's body may be too long to travel in.
+            return render_application(request, folder=folder, again=True, text=text)
+        return RedirectResponse(
+            request.url_for("application", folder=folder).include_query_params(**{AGAIN: "1"}),
+            status_code=303,
         )
 
     async def create(request: Request) -> Response:
@@ -329,13 +350,9 @@ def create_app(
                 create_application, data_dir, committer, **entered, on=clock().date()
             )
         except AlreadyBroughtIn as already:
-            # Nothing was created: what was entered with it is dropped.
-            return RedirectResponse(
-                request.url_for(
-                    "application", folder=already.application.folder
-                ).include_query_params(**{AGAIN: "1"}),
-                status_code=303,
-            )
+            # Nothing was created: what was entered with it is dropped, but for a text its
+            # Posting may still be given.
+            return lead_to(request, already.application.folder, entered["text"])
         except Refused as refusal:
             return render_new(request, entered, refusal)
         except NotCommitted as not_committed:
@@ -364,8 +381,14 @@ def create_app(
         refusal: Refused | NotCommitted | None = None,
         typed: str | None = None,
         said: str = "",
+        folder: str | None = None,
+        again: bool = False,
+        text: str = "",
     ) -> Response:
-        folder = request.path_params["folder"]
+        # Another address than the Application's own shows it when a link brought in again led
+        # there with a text.
+        at_own_address = folder is None
+        folder = folder or request.path_params["folder"]
         try:
             application = read_application(data_dir, folder)
         except Refused as not_opened:
@@ -387,7 +410,11 @@ def create_app(
                 # The difference unless the preview was switched to, which only a Revision has.
                 "previewed": request.query_params.get(VIEW) == PREVIEW,
                 "view_param": VIEW,
-                "brought_in_again": refusal is None and AGAIN in request.query_params,
+                "brought_in_again": again or (refusal is None and AGAIN in request.query_params),
+                "takes_text": lacks_text(posting),
+                # What the field for the Posting's text holds: what came along with its link, or
+                # what was typed into it and refused.
+                "text": text,
                 "preview_view": PREVIEW,
                 "no_printer": NO_PRINTER,
                 # A body typed by hand and refused is kept, so a refusal does not cost the edit.
@@ -396,7 +423,7 @@ def create_app(
                 "said": said,
                 # Only the page as it is asked for: with a refusal it is not at its own address,
                 # and asking for that again would not be asking for this page.
-                "keeps_up": refusal is None and standing.under_way,
+                "keeps_up": at_own_address and refusal is None and standing.under_way,
                 "status_badges": STATUS_BADGES,
                 "entered": {},
             },
@@ -416,6 +443,16 @@ def create_app(
         except (Refused, NotCommitted) as refusal:
             # Refused only where there is no Application to show; that page says so instead.
             return render_application(request, refusal)
+        return RedirectResponse(request.url_for("application", folder=folder), status_code=303)
+
+    async def give_posting_text(request: Request) -> Response:
+        form = await request.form()
+        folder = request.path_params["folder"]
+        text = str(form.get("text", ""))
+        try:
+            await run_in_threadpool(give_text, data_dir, committer, folder, text)
+        except (Refused, NotCommitted) as refusal:
+            return render_application(request, refusal, text=text)
         return RedirectResponse(request.url_for("application", folder=folder), status_code=303)
 
     async def ask_for_letter(request: Request) -> Response:
@@ -802,6 +839,7 @@ def create_app(
             Route("/applications", create, methods=["POST"]),
             Route("/applications/new", new_application),
             Route("/applications/{folder:path}/status", set_status, methods=["POST"]),
+            Route("/applications/{folder:path}/posting/text", give_posting_text, methods=["POST"]),
             Route("/applications/{folder:path}/letter/ask", ask_for_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/say", say_about_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/again", send_again, methods=["POST"]),

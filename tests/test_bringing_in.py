@@ -394,7 +394,7 @@ def test_the_same_link_again_creates_nothing_and_leads_to_the_application_that_h
 def test_a_link_handed_in_inside_the_text_is_found_on_record_too(
     dashboard: TestClient, data_dir: Path
 ) -> None:
-    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK)
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK, text=TEXT)
 
     created = create(dashboard, company="Nordwind AG", role="Lead", text=f"{TEXT}\n{LINK}#top")
 

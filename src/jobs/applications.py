@@ -193,6 +193,36 @@ def _brought_in(
     return records.dump({name: value for name, value in record.items() if value is not None})
 
 
+def lacks_text(posting: KeptPosting | None) -> bool:
+    """Whether `posting` was brought in by hand without its text, which it may then be given
+    once."""
+    return (
+        posting is not None and posting.brought_in_by_hand is not None and not posting.description
+    )
+
+
+def give_text(data_dir: Path, committer: Committer, folder: str, text: str) -> None:
+    """Write `text` into the Posting brought in by hand without one that the Application in
+    `folder` holds, and commit that file alone. From then on it is fixed like the rest of the
+    Posting. Raises NotFound, Refused and NotCommitted."""
+    path = directory_of(data_dir, folder) / POSTING_NAME
+    text = _as_typed(text)
+    try:
+        posting = read_posting(path) if path.is_file() else None
+        record = records.load(path) if posting is not None else {}
+    except Malformed as malformed:
+        raise Refused(f"{folder} was left as it is, fix it by hand first: {malformed}.") from None
+    if not lacks_text(posting):
+        raise Refused(
+            "Only a Posting brought in by hand without its text can be given one, and only once."
+        )
+    if not text:
+        raise Refused("The text is empty: paste the Posting's text first.")
+    record["description"] = records.Lines(text)
+    records.write(path, records.dump(record))
+    _commit(committer, f"Give the Posting of {folder} its text", folder, [path])
+
+
 @dataclass(frozen=True)
 class Scaffolded:
     """A new Application on disk that no commit holds yet."""

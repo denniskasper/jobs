@@ -50,6 +50,18 @@
       </dl>
       {% if posting.description %}
       <div class="posting-text" data-citable>{{ posting.description }}</div>
+      {% elif takes_text %}
+      <form method="post" action="{{ url_for('give_posting_text', folder=application.folder) }}" class="written">
+        <div class="form-group">
+          <label class="form-label" for="posting-text">The Posting's text</label>
+          <textarea class="form-input" id="posting-text" name="text" autocomplete="off"
+                    rows="{{ [text.count('\n') + 2, 6]|max }}">{{ text }}</textarea>
+          <p class="note">{% if brought_in_again and text %}This is the text that came along with the link, and
+            nothing is kept until you save it. {% endif %}The Posting was brought in without its
+            text, and can be given it once: from then on it stays as it is saved.</p>
+        </div>
+        <button type="submit" class="add">Save</button>
+      </form>
       {% else %}
       <p class="note">The Posting was kept without a description.</p>
       {% endif %}
@@ -148,6 +160,10 @@
         <button type="submit" class="add">Ask for a first version</button>
       </form>
       {% endif %}
+      {% endif %}
+      {% if takes_text %}
+      <p class="note" role="status">The Posting has no text, so a Letter is written without it.
+        <a href="#posting-text">Give the Posting its text</a> first if you have it.</p>
       {% endif %}
       {% if standing.read_only %}
       <p class="note" role="status">{{ standing.read_only }}</p>

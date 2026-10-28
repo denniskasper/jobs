@@ -771,3 +771,22 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ───────── citing what is selected ───────── */
+
+.cite {
+  position: absolute;
+  z-index: 10;
+  min-height: 32px;
+  padding: 0 12px;
+  font-family: var(--label);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ground);
+  background: var(--ink);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: var(--lift);
+  cursor: pointer;
+}
+.cite[hidden] { display: none; }

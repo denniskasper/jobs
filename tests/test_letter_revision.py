@@ -272,7 +272,7 @@ def test_a_first_version_reads_as_the_letter_it_would_make_with_nothing_marked(
     page = dashboard.get(PAGE).text
 
     # Everything in it is new, so marking it says nothing: it is set as it will read.
-    assert '<div class="difference first">' in page
+    assert '<div class="difference first" data-citable>' in page
     assert "<strong>Application as Research Engineer</strong>" in page
     assert "**" not in part(page, "letter")
     assert "A first version is waiting" in part(page, "letter")

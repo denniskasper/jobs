@@ -43,7 +43,7 @@
         {% if posting.posted %}<dt>Posted</dt><dd class="mono">{{ posting.posted.isoformat() }}</dd>{% endif %}
       </dl>
       {% if posting.description %}
-      <div class="posting-text">{{ posting.description }}</div>
+      <div class="posting-text" data-citable>{{ posting.description }}</div>
       {% else %}
       <p class="note">The Posting was kept without a description.</p>
       {% endif %}
@@ -93,7 +93,7 @@
          will read. #}
       <p class="note">{% if not standing.read_only %}A first version is waiting. It reads here as it will in the Letter,
         and the Letter stays empty until you accept.{% else %}A first version was waiting when the Status changed, and stays undecided.{% endif %}</p>
-      <div class="difference first">
+      <div class="difference first" data-citable>
         {%- for paragraph in standing.difference %}
         <p>{% for span in paragraph %}<ins>{{ span.text|markdown_inline }}</ins>{% endfor %}</p>
         {%- endfor %}
@@ -102,7 +102,7 @@
       <p class="note">{% if not standing.read_only %}A Revision is waiting. What it adds is marked, what it removes is struck
         through, and the Letter stays as it is until you accept.{% else %}A Revision was waiting when the Status changed, and stays undecided. What it adds is
         marked, what it removes is struck through.{% endif %}</p>
-      <div class="difference">
+      <div class="difference" data-citable>
         {%- for paragraph in standing.difference %}
         <p>{% for span in paragraph %}{% if span.change == 'added' %}<ins>{{ span.text }}</ins>{% elif span.change == 'removed' %}<del>{{ span.text }}</del>{% else %}{{ span.text }}{% endif %}{% endfor %}</p>
         {%- endfor %}
@@ -129,10 +129,10 @@
         nowhere.</p>
       <details class="as-text">
         <summary>Read as text</summary>
-        <div class="letter-body">{{ standing.letter }}</div>
+        <div class="letter-body" data-citable>{{ standing.letter }}</div>
       </details>
       {% else %}
-      <div class="letter-body">{{ standing.letter }}</div>
+      <div class="letter-body" data-citable>{{ standing.letter }}</div>
       <p class="note" role="status">{{ no_printer }}</p>
       {% endif %}
       {% else %}
@@ -187,7 +187,7 @@
           {% if message.author == 'applicant' %}
           <div class="message-text">{{ message.text }}</div>
           {% else %}
-          <div class="message-text written-by-model">{{ message.text|markdown }}</div>
+          <div class="message-text written-by-model" data-citable>{{ message.text|markdown }}</div>
           {% endif %}
           {% endif %}
         </li>
@@ -223,6 +223,61 @@
 {% endblock %}
 
 {% block after %}
+{% if not standing.read_only %}
+{# Outside the parts an answer brings up to date, so that it outlives them. #}
+<button type="button" class="cite" hidden>Cite</button>
+<script id="citing">
+  // Text selected within one passage of the Letter, the Posting or a model's answer can be
+  // cited: it is quoted into the message about the Letter, and what is typed goes below it.
+  (function () {
+    var cite = document.querySelector('.cite');
+    function citable(node) {
+      var element = node && (node.nodeType === 1 ? node : node.parentElement);
+      return element && element.closest('[data-citable]');
+    }
+    function selected() {
+      var selection = getSelection();
+      if (!selection.rangeCount || selection.isCollapsed) return null;
+      var range = selection.getRangeAt(0);
+      var within = citable(range.startContainer);
+      if (!within || within !== citable(range.endContainer)) return null;
+      var text = selection.toString().trim();
+      return text && document.getElementById('message') ? range : null;
+    }
+    function offer() {
+      var range = selected();
+      if (!range) { cite.hidden = true; return; }
+      var box = range.getBoundingClientRect();
+      cite.style.top = (box.bottom + window.scrollY + 6) + 'px';
+      cite.style.left = Math.max(box.left + window.scrollX, 8) + 'px';
+      cite.hidden = false;
+    }
+    ['mouseup', 'keyup', 'touchend'].forEach(function (name) {
+      document.addEventListener(name, function () { setTimeout(offer); });
+    });
+    document.addEventListener('selectionchange', function () {
+      if (!selected()) cite.hidden = true;
+    });
+    // Pressed without taking the selection away.
+    cite.addEventListener('mousedown', function (event) { event.preventDefault(); });
+    cite.addEventListener('click', function () {
+      var message = document.getElementById('message');
+      if (!message || !selected()) return;
+      var quote = getSelection().toString().trim().split(/\r?\n/).map(function (line) {
+        line = line.trim();
+        return line ? '> ' + line : '>';
+      }).join('\n');
+      var before = message.value;
+      if (before && !/\n\n$/.test(before)) before += /\n$/.test(before) ? '\n' : '\n\n';
+      message.value = before + quote + '\n\n';
+      getSelection().removeAllRanges();
+      cite.hidden = true;
+      message.focus();
+      message.setSelectionRange(message.value.length, message.value.length);
+    });
+  })();
+</script>
+{% endif %}
 {% if keeps_up %}
 <script id="keeps-up">
   // An answer is waiting or under way: ask for this page again every three seconds and take

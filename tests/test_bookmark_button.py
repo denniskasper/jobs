@@ -16,7 +16,7 @@ from playwright.sync_api import Page
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from jobs.web.bookmark import ADDRESS_LIMIT
+from jobs.web import bookmark as the_button
 from test_bringing_in import LINK, field, opened
 from test_fetching import no_chromium
 from test_waiting import in_the_browser
@@ -136,6 +136,6 @@ def test_a_selection_too_long_for_an_address_arrives_cut_and_the_form_says_so(
         arrived = page.input_value("#text")
         assert 1000 < len(arrived) < len(long)
         assert long.startswith(arrived)
-        assert len(page.url) <= ADDRESS_LIMIT
+        assert len(page.url) <= the_button.ADDRESS_LIMIT
         assert page.input_value("#link") == LINK
         assert "was cut" in page.content()

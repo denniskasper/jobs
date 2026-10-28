@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import hashlib
+import re
 import sys
 import time
 from collections.abc import AsyncIterator, Callable, Sequence
@@ -16,7 +17,13 @@ from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 from starlette.requests import Request
-from starlette.responses import FileResponse, PlainTextResponse, RedirectResponse, Response
+from starlette.responses import (
+    FileResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
@@ -141,6 +148,10 @@ PREVIEW = "preview"
 # What an Application's page is opened with when a link brought in again led to it.
 AGAIN = "again"
 
+# The icons a phone asks for, drawn from the favicon's tick, full bleed so a launcher may mask
+# them to its own shape.
+ICON_SIZES = (192, 512)
+
 # What the Sources page adds to its address when it asks for itself again.
 BY_ITSELF = "by-itself"
 
@@ -149,6 +160,15 @@ def _status_code(refusal: Refused | NotCommitted | None) -> int:
     if refusal is None:
         return 200
     return REFUSAL_STATUS_CODES.get(type(refusal), 422)
+
+
+def _custom_property(stylesheet: bytes, name: str) -> str:
+    """The value the stylesheet first gives a custom property: the one it has where nothing is
+    dark."""
+    found = re.search(rf"--{name}:\s*([^;]+);", stylesheet.decode())
+    if found is None:
+        raise ValueError(f"the stylesheet sets no --{name}")
+    return found[1].strip()
 
 
 def create_app(
@@ -229,6 +249,40 @@ def create_app(
     def favicon(request: Request) -> Response:
         # Browsers and tools ask for this path whatever icon a page links.
         return FileResponse(HERE / "static" / "favicon.svg", media_type="image/svg+xml")
+
+    # The desk's colour where nothing is dark, which the page's own theme-color names too.
+    ground = _custom_property(stylesheet, "ground")
+
+    def manifest(request: Request) -> Response:
+        # What makes the app installable and a target of the share sheet. A share opens the page
+        # that creates an Application as a plain request, so no service worker is needed.
+        icons = [
+            {
+                "src": str(request.url_for("static", path=f"icon-{size}.png")),
+                "sizes": f"{size}x{size}",
+                "type": "image/png",
+                "purpose": purpose,
+            }
+            for purpose in ("any", "maskable")
+            for size in ICON_SIZES
+        ]
+        return JSONResponse(
+            {
+                "name": "Job search",
+                "short_name": "Jobs",
+                "start_url": str(request.url_for("dashboard")),
+                "display": "standalone",
+                "background_color": ground,
+                "theme_color": ground,
+                "icons": icons,
+                "share_target": {
+                    "action": str(request.url_for("new_application")),
+                    "method": "GET",
+                    "params": {"title": "title", "text": "text", "url": "link"},
+                },
+            },
+            media_type="application/manifest+json",
+        )
 
     def health(request: Request) -> Response:
         # What the container's health check asks. A volume that failed to mount is the one
@@ -744,6 +798,7 @@ def create_app(
             Route("/", dashboard),
             Route("/health", health),
             Route("/favicon.ico", favicon),
+            Route("/manifest.webmanifest", manifest),
             Route("/applications", create, methods=["POST"]),
             Route("/applications/new", new_application),
             Route("/applications/{folder:path}/status", set_status, methods=["POST"]),

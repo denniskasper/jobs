@@ -12,6 +12,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from jobs import documents, records
 from jobs.commits import CommitFailed, Committer
@@ -23,7 +24,8 @@ RECORD_NAME = "application.yaml"
 # The fields the user writes text into, on the Application's page or by hand.
 _WRITTEN_DOWN = ("notes", "address")
 
-# The Posting an Application was created from at the Pursue Gate, as it was kept when ticked.
+# The Posting an Application holds: as it was kept when ticked at the Pursue Gate, or as it was
+# brought in by hand.
 POSTING_NAME = "posting.yaml"
 
 
@@ -116,14 +118,53 @@ def posting_of(data_dir: Path, folder: str) -> KeptPosting | None:
 
 
 def create_application(
-    data_dir: Path, committer: Committer, *, company: str, role: str, on: date
+    data_dir: Path,
+    committer: Committer,
+    *,
+    company: str,
+    role: str,
+    on: date,
+    link: str = "",
+    text: str = "",
+    deadline: str = "",
 ) -> Application:
-    """Create an Application by hand, with no Posting, and commit it. Raises Refused and
-    NotCommitted."""
-    scaffolded = scaffold(data_dir, company=company, role=role, on=on)
+    """Create an Application by hand and commit it. With a link or a text it holds a Posting
+    brought in by hand, written beside it in the same commit; with neither it holds none. Raises
+    Refused and NotCommitted."""
+    posting = _brought_in(company, role, on, link, text, deadline)
+    scaffolded = scaffold(data_dir, company=company, role=role, on=on, posting=posting)
     folder = scaffolded.application.folder
     _commit(committer, f"Create Application {folder}", folder, scaffolded.paths)
     return scaffolded.application
+
+
+def _brought_in(
+    company: str, role: str, on: date, link: str, text: str, deadline: str
+) -> str | None:
+    """The file of a Posting brought in by hand, in the form a kept Posting has, or None when
+    neither a link nor a text was brought. It belongs to no Source, so it has no identity there.
+    Raises Refused."""
+    link, text = link.strip(), text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    try:
+        due = date.fromisoformat(deadline.strip()) if deadline.strip() else None
+    except ValueError:
+        raise Refused("The deadline has to be a date written as YYYY-MM-DD.") from None
+    if link and (
+        urlsplit(link).scheme.lower() not in ("http", "https") or not urlsplit(link).netloc
+    ):
+        # It is shown as a link to follow, so it has to be an address a browser only opens.
+        raise Refused("The link has to be an address beginning with http:// or https://.")
+    if not link and not text:
+        return None
+    record = {
+        "company": company.strip(),
+        "role": role.strip(),
+        "url": link or None,
+        "deadline": due,
+        "brought_in_by_hand": on,
+        "description": records.Lines(text) if text else None,
+    }
+    return records.dump({name: value for name, value in record.items() if value is not None})
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}New Application · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">New Application</h1>
+
+  <div class="bar">
+    {% set tab = 'applications' %}{% include "tabs.html" %}
+  </div>
+
+  {% include "notes.html" %}
+
+  <div class="cmd-section">
+    {% if refusal %}
+    <div class="note form-group" role="alert">
+      <p><strong>Not done.</strong> {{ refusal }}</p>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('create') }}">
+      <div class="form-group">
+        <label class="form-label" for="company">Company</label>
+        <input class="form-input" id="company" name="company" required value="{{ entered.company }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="role">Role</label>
+        <input class="form-input" id="role" name="role" required value="{{ entered.role }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="link">Link to the Posting, optional</label>
+        <input class="form-input" id="link" name="link" type="url" inputmode="url" autocomplete="off"
+               value="{{ entered.link }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="deadline">Deadline, optional</label>
+        <input class="form-input" id="deadline" name="deadline" type="date" value="{{ entered.deadline }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="text">The Posting's text, optional</label>
+        <textarea class="form-input" id="text" name="text"
+                  rows="{{ [entered.text.count('\n') + 2, 10]|max }}">{{ entered.text }}</textarea>
+      </div>
+      <p class="note form-group">Starts at To do, dated {{ today.isoformat() }}. With a link or a
+        text it holds the Posting as you brought it in; with neither, it holds no Posting. Nothing
+        is fetched.</p>
+      <button type="submit" class="add">Create</button>
+    </form>
+  </div>
+{% endblock %}

@@ -21,7 +21,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from jobs import __version__
+from jobs import __version__, guess
 from jobs.applications import (
     Status,
     change_status,
@@ -119,6 +119,9 @@ _MARKDOWN = MarkdownIt("commonmark", {"html": False}).disable("image")
 # What the Register form asks for.
 REGISTER_FIELDS = ("url", "label", "rule")
 
+# What the page that creates an Application asks for.
+CREATE_FIELDS = ("company", "role", "link", "deadline", "text")
+
 # What the user writes down on an Application's page.
 WRITTEN_FIELDS = ("notes", "address")
 
@@ -197,11 +200,7 @@ def create_app(
             status_code=_status_code(refusal),
         )
 
-    def render(
-        request: Request,
-        refusal: Refused | NotCommitted | None = None,
-        entered: dict[str, str] | None = None,
-    ) -> Response:
+    def render(request: Request, refusal: Refused | NotCommitted | None = None) -> Response:
         listing = list_applications(data_dir)
         return page(
             request,
@@ -209,7 +208,7 @@ def create_app(
             {
                 "applications": listing.applications,
                 "problems": listing.problems,
-                "entered": entered or {},
+                "entered": {},
                 "statuses": list(Status),
                 "status_badges": STATUS_BADGES,
             },
@@ -230,19 +229,35 @@ def create_app(
             return PlainTextResponse("no data directory", status_code=503)
         return PlainTextResponse("ok")
 
+    def render_new(
+        request: Request,
+        entered: dict[str, str],
+        refusal: Refused | None = None,
+    ) -> Response:
+        return page(request, "new_application.html", {"entered": entered}, refusal)
+
+    def new_application(request: Request) -> Response:
+        # Opened filled in, by a share or a bookmark, it only shows the form: nothing is created
+        # until Create is pressed, and nothing is fetched at all.
+        query = request.query_params
+        entered = {field: query.get(field, "") for field in CREATE_FIELDS}
+        return render_new(request, guess.filled_in(entered, title=query.get("title", "")))
+
     async def create(request: Request) -> Response:
         form = await request.form()
-        entered = {field: str(form.get(field, "")) for field in ("company", "role")}
+        entered = guess.filled_in({field: str(form.get(field, "")) for field in CREATE_FIELDS})
         try:
             # Off the event loop: the commit is pushed, and a push waits on the network.
-            await run_in_threadpool(
+            created = await run_in_threadpool(
                 create_application, data_dir, committer, **entered, on=clock().date()
             )
         except Refused as refusal:
-            return render(request, refusal, entered)
+            return render_new(request, entered, refusal)
         except NotCommitted as not_committed:
             return render(request, not_committed)
-        return RedirectResponse(request.url_for("dashboard"), status_code=303)
+        return RedirectResponse(
+            request.url_for("application", folder=created.folder), status_code=303
+        )
 
     async def set_status(request: Request) -> Response:
         form = await request.form()
@@ -698,6 +713,7 @@ def create_app(
             Route("/health", health),
             Route("/favicon.ico", favicon),
             Route("/applications", create, methods=["POST"]),
+            Route("/applications/new", new_application),
             Route("/applications/{folder:path}/status", set_status, methods=["POST"]),
             Route("/applications/{folder:path}/letter/ask", ask_for_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/say", say_about_letter, methods=["POST"]),

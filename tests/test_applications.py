@@ -227,10 +227,13 @@ def test_deleting_the_folder_by_hand_removes_the_application(
 def test_the_dashboard_offers_the_forms_that_create_and_change(
     dashboard: TestClient, data_dir: Path
 ) -> None:
-    create = re.search(r'<form[^>]*action="([^"]+)"', dashboard.get("/").text)
+    new = re.search(r'<a[^>]*href="([^"]+)"[^>]*>New Application<', dashboard.get("/").text)
+    assert new is not None
+    create = re.search(r'<form[^>]*action="([^"]+)"', dashboard.get(new[1]).text)
     assert create is not None
-    listed = dashboard.post(create[1], data={"company": "Nordwind Robotics", "role": "Engineer"})
+    dashboard.post(create[1], data={"company": "Nordwind Robotics", "role": "Engineer"})
 
+    listed = dashboard.get("/")
     change = re.search(r'<form[^>]*action="([^"]+/status)"', listed.text)
     assert change is not None
     dashboard.post(change[1], data={"status": "closed"})

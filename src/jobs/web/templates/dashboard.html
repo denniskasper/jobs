@@ -5,7 +5,7 @@
 
   <div class="bar">
     {% set tab = 'applications' %}{% include "tabs.html" %}
-    <button type="button" class="add" id="new-application-open">New Application</button>
+    <a class="add" href="{{ url_for('new_application') }}">New Application</a>
   </div>
 
   {% include "notes.html" %}
@@ -63,53 +63,4 @@
     </table>
     {% endif %}
   </div>
-  {% endblock %}
-
-{% block after %}
-<div class="modal-overlay{% if entered %} open{% endif %}" id="new-application">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-application-title">
-    <div class="modal-header">
-      <span class="modal-title" id="new-application-title">New Application</span>
-      <button type="button" class="modal-close" id="new-application-close" aria-label="Close">✕</button>
-    </div>
-    <div class="modal-body">
-      {% if refusal %}
-      <div class="note form-group" role="alert">
-        <p><strong>Not done.</strong> {{ refusal }}</p>
-      </div>
-      {% endif %}
-      <form method="post" action="{{ url_for('create') }}">
-        <div class="form-group">
-          <label class="form-label" for="company">Company</label>
-          <input class="form-input" id="company" name="company" required value="{{ entered.company }}">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="role">Role</label>
-          <input class="form-input" id="role" name="role" required value="{{ entered.role }}">
-        </div>
-        <p class="note form-group">Starts at To do, dated {{ today.isoformat() }}. No Posting is needed.</p>
-        <button type="submit" class="add">Create</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<script>
-  (function () {
-    var overlay = document.getElementById('new-application');
-    document.getElementById('new-application-open').addEventListener('click', function () {
-      overlay.classList.add('open');
-      document.getElementById('company').focus();
-    });
-    document.getElementById('new-application-close').addEventListener('click', function () {
-      overlay.classList.remove('open');
-    });
-    overlay.addEventListener('click', function (event) {
-      if (event.target === overlay) overlay.classList.remove('open');
-    });
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') overlay.classList.remove('open');
-    });
-  })();
-</script>
 {% endblock %}

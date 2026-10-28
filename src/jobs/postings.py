@@ -271,6 +271,9 @@ class KeptPosting:
     dismissed: datetime | None = None
     pursued: datetime | None = None
     """When it was ticked at the Pursue Gate and became an Application."""
+    brought_in_by_hand: date | None = None
+    """The day it was brought in by hand with its Application, for one that belongs to no
+    Source."""
 
     def expired(self, today: date) -> bool:
         """Past its Deadline. The day of the Deadline itself still counts."""
@@ -332,6 +335,7 @@ def _parse(record: dict[Any, Any], name: str) -> KeptPosting:
         first_shown=_moment(record, "first_shown"),
         dismissed=_moment(record, "dismissed"),
         pursued=_moment(record, "pursued"),
+        brought_in_by_hand=_day(record, "brought_in_by_hand"),
     )
 
 

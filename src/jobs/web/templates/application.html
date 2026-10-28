@@ -32,6 +32,9 @@
       {% elif not posting %}
       <p class="note">This Application holds no Posting.</p>
       {% else %}
+      {% if posting.brought_in_by_hand %}
+      <p class="note">Brought in by hand on {{ posting.brought_in_by_hand.isoformat() }}: what follows is what you entered, not what a Source read.</p>
+      {% endif %}
       <dl class="facts">
         <dt>Role</dt>
         <dd>{% if posting.url %}<a href="{{ posting.url }}" rel="noreferrer" target="_blank">{{ posting.role }}</a>{% else %}{{ posting.role }}{% endif %}</dd>

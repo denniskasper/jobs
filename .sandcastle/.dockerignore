@@ -1,0 +1,6 @@
+# The image is built from this folder; none of this belongs in it.
+.env
+.env.example
+logs/
+worktrees/
+node_modules/

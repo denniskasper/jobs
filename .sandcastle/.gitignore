@@ -1,0 +1,5 @@
+# Tokens, Sandcastle's worktrees and logs, and the runner's packages.
+.env
+logs/
+worktrees/
+node_modules/

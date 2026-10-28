@@ -1,0 +1,18 @@
+{
+  "name": "jobs-sandcastle",
+  "private": true,
+  "type": "module",
+  "description": "Runs Sandcastle agents against this repository. The only Node in it, kept in this folder.",
+  "packageManager": "pnpm@12.15.0",
+  "scripts": {
+    "sandcastle": "tsx main.ts",
+    "build-image": "docker build --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) -t sandcastle:jobs ."
+  },
+  "dependencies": {
+    "@ai-hero/sandcastle": "^0.12.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1",
+    "typescript": "^5.9.3"
+  }
+}

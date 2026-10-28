@@ -26,6 +26,9 @@
   <div class="application">
     <section class="application-part" id="posting" aria-labelledby="posting-title">
       <h2 class="application-title" id="posting-title">Posting</h2>
+      {% if brought_in_again %}
+      <p class="note" role="status">This Posting was already brought in, so nothing new was created.</p>
+      {% endif %}
       {% if posting_problem %}
       <p class="note" role="alert"><strong>The Posting could not be read.</strong>
         {{ posting_problem }}. Fix <span class="mono">posting.yaml</span> by hand and reload.</p>

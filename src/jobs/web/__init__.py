@@ -23,6 +23,7 @@ from starlette.templating import Jinja2Templates
 
 from jobs import __version__, guess
 from jobs.applications import (
+    AlreadyBroughtIn,
     Status,
     change_status,
     create_application,
@@ -132,6 +133,9 @@ NO_PRINTER = "No PDF can be built: this service was started without a printer."
 # make, where it shows the difference without it.
 VIEW = "view"
 PREVIEW = "preview"
+
+# What an Application's page is opened with when a link brought in again led to it.
+AGAIN = "again"
 
 # What the Sources page adds to its address when it asks for itself again.
 BY_ITSELF = "by-itself"
@@ -251,6 +255,14 @@ def create_app(
             created = await run_in_threadpool(
                 create_application, data_dir, committer, **entered, on=clock().date()
             )
+        except AlreadyBroughtIn as already:
+            # Nothing was created: what was entered with it is dropped.
+            return RedirectResponse(
+                request.url_for(
+                    "application", folder=already.application.folder
+                ).include_query_params(**{AGAIN: "1"}),
+                status_code=303,
+            )
         except Refused as refusal:
             return render_new(request, entered, refusal)
         except NotCommitted as not_committed:
@@ -302,6 +314,7 @@ def create_app(
                 # The difference unless the preview was switched to, which only a Revision has.
                 "previewed": request.query_params.get(VIEW) == PREVIEW,
                 "view_param": VIEW,
+                "brought_in_again": refusal is None and AGAIN in request.query_params,
                 "preview_view": PREVIEW,
                 "no_printer": NO_PRINTER,
                 # A body typed by hand and refused is kept, so a refusal does not cost the edit.

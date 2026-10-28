@@ -14,6 +14,7 @@ import yaml
 from starlette.testclient import TestClient
 
 from conftest import Pages, RememberedCommits, ScriptedModel, fetch_next_answer
+from test_proposals import write_posting
 
 FOLDER = "nordwind-robotics/2026-09-18-simulation-engineer"
 LINK = "https://www.stellenwerk.example/jobs/4711"
@@ -351,6 +352,117 @@ def test_nothing_is_fetched_while_a_posting_is_brought_in(
     )
     dashboard.get(created.headers["location"])
     create(dashboard, company="", role="Simulation Engineer", link=LINK, text=TEXT)
+
+    assert network.fetched == []
+    assert network.rendered == []
+
+
+def already_brought_in(dashboard: TestClient, created: Any) -> str:
+    """The page a Create that found its link on record leads to."""
+    assert created.status_code == 303
+    page: str = dashboard.get(created.headers["location"]).text
+    return page
+
+
+@pytest.mark.parametrize(
+    "again",
+    [
+        LINK,
+        f"{LINK}#apply",
+        f"{LINK}?utm_source=newsletter&utm_medium=email",
+        f"{LINK}?fbclid=abc123",
+        "https://WWW.Stellenwerk.Example/jobs/4711",
+    ],
+)
+def test_the_same_link_again_creates_nothing_and_leads_to_the_application_that_holds_it(
+    dashboard: TestClient, data_dir: Path, committer: RememberedCommits, again: str
+) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK, text=TEXT)
+
+    created = create(dashboard, company="Nordwind AG", role="Simulation lead", link=again)
+
+    assert created.headers["location"].split("?")[0].endswith(f"/applications/{FOLDER}")
+    assert "This Posting was already brought in" in already_brought_in(dashboard, created)
+    assert [
+        path.relative_to(data_dir / "applications").as_posix()
+        for path in sorted((data_dir / "applications").glob("*/*"))
+    ] == [FOLDER]
+    assert len(committer.commits) == 1
+    assert posting_in(data_dir)["description"] == TEXT
+
+
+def test_a_link_handed_in_inside_the_text_is_found_on_record_too(
+    dashboard: TestClient, data_dir: Path
+) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK)
+
+    created = create(dashboard, company="Nordwind AG", role="Lead", text=f"{TEXT}\n{LINK}#top")
+
+    assert "This Posting was already brought in" in already_brought_in(dashboard, created)
+    assert not (data_dir / "applications" / "nordwind-ag").exists()
+
+
+def test_the_link_of_a_posting_pursued_at_the_pursue_gate_is_on_record(
+    dashboard: TestClient, data_dir: Path, committer: RememberedCommits
+) -> None:
+    write_posting(data_dir, "doctoral-researcher")
+    dashboard.get("/proposals")
+    dashboard.post("/proposals", data={"posting": "hafenstadt/doctoral-researcher"})
+    pursued = "hafenstadt-institute-of-technology/2026-09-18-doctoral-researcher"
+    commits = len(committer.commits)
+
+    created = create(
+        dashboard,
+        company="Hafenstadt Institute of Technology",
+        role="Doctoral researcher",
+        link="https://PORTAL.example/jobs/posting/doctoral-researcher?utm_campaign=autumn#top",
+        text=TEXT,
+    )
+
+    assert created.headers["location"].split("?")[0].endswith(f"/applications/{pursued}")
+    page = already_brought_in(dashboard, created)
+    assert "This Posting was already brought in" in page
+    assert TEXT not in page
+    assert len(committer.commits) == commits
+    assert [path.name for path in (data_dir / "applications").glob("*/*")] == [
+        pursued.split("/")[1]
+    ]
+
+
+def test_a_different_link_is_not_on_record(dashboard: TestClient, data_dir: Path) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK)
+
+    created = create(
+        dashboard, company="Nordwind Robotics", role="Test Engineer", link=f"{LINK}?page=2"
+    )
+
+    page = already_brought_in(dashboard, created)
+    assert "This Posting was already brought in" not in page
+    assert len(list((data_dir / "applications").glob("*/*"))) == 2
+
+
+def test_applications_without_links_never_match(dashboard: TestClient, data_dir: Path) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", text=TEXT)
+    create(dashboard, company="Helios Antriebe", role="Test Engineer")
+
+    created = create(dashboard, company="Nordwind Robotics", role="Test Engineer", text=TEXT)
+
+    assert "This Posting was already brought in" not in already_brought_in(dashboard, created)
+    assert len(list((data_dir / "applications").glob("*/*"))) == 3
+
+
+def test_the_applications_page_says_nothing_of_it_when_opened_on_its_own(
+    dashboard: TestClient,
+) -> None:
+    created = create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK)
+
+    assert "already brought in" not in already_brought_in(dashboard, created)
+
+
+def test_nothing_is_fetched_to_find_a_link_on_record(dashboard: TestClient, network: Pages) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK)
+    created = create(dashboard, company="Nordwind AG", role="Lead", link=f"{LINK}#top")
+    dashboard.get(created.headers["location"])
 
     assert network.fetched == []
     assert network.rendered == []

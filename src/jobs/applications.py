@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 
 from jobs import documents, records
 from jobs.commits import CommitFailed, Committer
-from jobs.postings import KeptPosting, read_posting
+from jobs.postings import KeptPosting, canonical_url, read_posting
 from jobs.records import AlreadyExists, Malformed, NotCommitted, NotFound, Refused
 
 RECORD_NAME = "application.yaml"
@@ -61,6 +61,15 @@ class Application:
     """What the user wrote down about this pursuit."""
     address: str = ""
     """The employer's address, line for line as it was typed."""
+
+
+class AlreadyBroughtIn(Exception):
+    """A link that is on record already, as the link of the Posting `application` holds. Not a
+    Refused: nothing was wrong with what was entered, it leads to what exists."""
+
+    def __init__(self, application: Application) -> None:
+        super().__init__(f"{application.folder} holds this Posting already.")
+        self.application = application
 
 
 @dataclass(frozen=True)
@@ -117,6 +126,21 @@ def posting_of(data_dir: Path, folder: str) -> KeptPosting | None:
     return read_posting(path) if path.is_file() else None
 
 
+def holding(data_dir: Path, link: str) -> Application | None:
+    """The Application whose Posting has `link`, however that Posting came to be there, or None.
+    Links are the same when their canonical URLs are. Nothing is fetched: only the copies in the
+    Applications' folders are read, and one that cannot be read holds nothing."""
+    wanted = canonical_url(link.strip())
+    for application in list_applications(data_dir).applications:
+        try:
+            posting = posting_of(data_dir, application.folder)
+        except Malformed:
+            continue
+        if posting is not None and posting.url and canonical_url(posting.url) == wanted:
+            return application
+    return None
+
+
 def create_application(
     data_dir: Path,
     committer: Committer,
@@ -129,8 +153,10 @@ def create_application(
     deadline: str = "",
 ) -> Application:
     """Create an Application by hand and commit it. With a link or a text it holds a Posting
-    brought in by hand, written beside it in the same commit; with neither it holds none. Raises
-    Refused and NotCommitted."""
+    brought in by hand, written beside it in the same commit; with neither it holds none. A link
+    on record already creates nothing. Raises AlreadyBroughtIn, Refused and NotCommitted."""
+    if link.strip() and (holder := holding(data_dir, link)) is not None:
+        raise AlreadyBroughtIn(holder)
     posting = _brought_in(company, role, on, link, text, deadline)
     scaffolded = scaffold(data_dir, company=company, role=role, on=on, posting=posting)
     folder = scaffolded.application.folder

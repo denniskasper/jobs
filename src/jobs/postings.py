@@ -6,6 +6,7 @@ Source: the folder is part of it, and the same position found through two Source
 """
 
 import hashlib
+import re
 import threading
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -24,6 +25,9 @@ IdentifiedBy = Literal["identifier", "url", "content"]
 _TRACKING = ("utm_", "fbclid", "gclid")
 
 _DEFAULT_PORTS = {"http": 80, "https": 443}
+
+# A LinkedIn job's page, by its ID alone or after a slug of its title.
+_LINKEDIN_VIEW = re.compile(r"^(?:/comm)?/jobs/view/(?:[^/]*-)?(?P<id>\d+)/?$")
 
 # When a Posting was found, which every poll moves on and which is no change to the Posting.
 _SEEN = ("first_seen", "last_seen")
@@ -70,7 +74,9 @@ def identity(posting: Posting, *, own_url: bool) -> Identity:
 
 def canonical_url(url: str) -> str:
     """The URL without what changes from one visit to the next: the case of the host, a default
-    port, a fragment, and the parameters that track where a visitor came from."""
+    port, a fragment, and the parameters that track where a visitor came from. A LinkedIn job's
+    address is the job's own, whichever of its addresses it came as."""
+    url = job_link(url)
     parts = urlsplit(url)
     scheme, host = parts.scheme.lower(), (parts.hostname or "").lower()
     try:
@@ -87,6 +93,26 @@ def canonical_url(url: str) -> str:
         ]
     )
     return urlunsplit((scheme, host, parts.path or "/", query, ""))
+
+
+def job_link(url: str) -> str:
+    """The address a link is kept under: every LinkedIn address that names a job, as
+    `/jobs/view/<id>` with or without a slug, under `/comm/` from an alert email, under a country's
+    subdomain, or as `currentJobId=<id>` on a search or recommendations page, is
+    `https://www.linkedin.com/jobs/view/<id>`. Any other is kept as it came, `lnkd.in` among them,
+    since resolving a short link would mean fetching it. The only rule for one site."""
+    parts = urlsplit(url.strip())
+    host = (parts.hostname or "").lower()
+    if parts.scheme.lower() not in ("http", "https") or not (
+        host == "linkedin.com" or host.endswith(".linkedin.com")
+    ):
+        return url
+    viewed = _LINKEDIN_VIEW.match(parts.path)
+    current = [
+        value for key, value in parse_qsl(parts.query) if key == "currentJobId" and value.isdigit()
+    ]
+    job = viewed["id"] if viewed else current[0] if current else None
+    return f"https://www.linkedin.com/jobs/view/{job}" if job else url
 
 
 def _normalised(text: str) -> str:

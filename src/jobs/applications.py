@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 
 from jobs import documents, records
 from jobs.commits import CommitFailed, Committer
-from jobs.postings import KeptPosting, canonical_url, read_posting
+from jobs.postings import KeptPosting, canonical_url, job_link, read_posting
 from jobs.records import AlreadyExists, Malformed, NotCommitted, NotFound, Refused
 
 RECORD_NAME = "application.yaml"
@@ -185,7 +185,7 @@ def _brought_in(
     record = {
         "company": company.strip(),
         "role": role.strip(),
-        "url": link or None,
+        "url": job_link(link) or None,
         "deadline": due,
         "brought_in_by_hand": on,
         "description": records.Lines(text) if text else None,

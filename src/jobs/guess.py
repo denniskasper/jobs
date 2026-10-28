@@ -1,5 +1,6 @@
 """What the page that creates an Application proposes from what a browser handed it: a company and
-a role from the page's title, and the link from a text that begins or ends with one.
+a role from the page's title or the LinkedIn app's share text, and the link from a text that
+begins or ends with one.
 
 Plain code, no model (decision 29). What it proposes is shown in fields to be corrected, and nothing
 else depends on it.
@@ -16,6 +17,13 @@ _SEPARATORS = re.compile(r"\s+(?:[|\-–—·•:]|::)\s+")
 
 _AT = re.compile(r"^(?P<role>.+?)\s+(?:at|bei)\s+(?P<company>.+)$", re.IGNORECASE)
 _HIRING = re.compile(r"^(?P<company>.+?)\s+is\s+hiring:?\s+(?:an?\s+)?(?P<role>.+)$", re.IGNORECASE)
+# LinkedIn's page title, whose place is dropped: in front of it the last " in ", since a role may
+# hold one. A count of notifications may stand before it.
+_LINKEDIN = re.compile(
+    r"^(?:\(\d+\)\s+)?(?P<company>.+?)\s+hiring\s+(?P<role>.+)\s+in\s+(?P<place>.+)$"
+)
+# What the LinkedIn app shares with a job's link: the company, and no role.
+_SHARED = re.compile(r"^Check out this job at (?P<company>.+?):?$", re.IGNORECASE)
 
 # A link as a phone hands it over in the text, before or after everything else.
 _LEADING_LINK = re.compile(r"^\s*(https?://\S+)(?:\s+|$)")
@@ -39,7 +47,10 @@ def from_title(title: str, link: str = "") -> Guess:
     if separators and _names_site(title[separators[-1].end() :], link):
         title = title[: separators[-1].start()]
     for part in _SEPARATORS.split(title):
-        for shape in (_AT, _HIRING):
+        found = _SHARED.match(part)
+        if found:
+            return Guess(company=found["company"].strip(" !."), role="")
+        for shape in (_HIRING, _LINKEDIN, _AT):
             found = shape.match(part)
             if found:
                 return Guess(company=found["company"].strip(" !."), role=found["role"].strip(" !."))
@@ -69,18 +80,20 @@ def link_in(text: str) -> tuple[str, str]:
 
 
 def filled_in(entered: dict[str, str], title: str = "") -> dict[str, str]:
-    """The form as it is to be shown or created from: the company and role proposed from the
-    title when neither was given, and the link taken from the text when none was."""
+    """The form as it is to be shown or created from: the link taken from the text when none was
+    given, and the company and role proposed when neither was, from the LinkedIn app's share
+    text, which is then no Posting's text, or otherwise from the title."""
     filled = dict(entered)
-    if (
-        title.strip()
-        and not filled.get("company", "").strip()
-        and not filled.get("role", "").strip()
-    ):
-        guess = from_title(title, filled.get("link", ""))
-        filled["company"], filled["role"] = guess.company, guess.role
     if not filled.get("link", "").strip():
         link, text = link_in(filled.get("text", ""))
         if link:
             filled["link"], filled["text"] = link, text
+    if filled.get("company", "").strip() or filled.get("role", "").strip():
+        return filled
+    shared = _SHARED.match(" ".join(filled.get("text", "").split()))
+    if shared and filled.get("link", "").strip():
+        filled["company"], filled["role"], filled["text"] = shared["company"].strip(" !."), "", ""
+    elif title.strip():
+        guess = from_title(title, filled.get("link", ""))
+        filled["company"], filled["role"] = guess.company, guess.role
     return filled

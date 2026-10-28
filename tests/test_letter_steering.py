@@ -161,7 +161,7 @@ def test_a_message_while_a_revision_waits_revises_it_against_the_letter_as_it_st
     page = dashboard.get(PAGE).text
     # Against the Letter, which is still empty, and not against the proposal before it.
     assert difference_on(page) == [
-        [("added", "**Application as Research Engineer**")],
+        [("added", "Application as Research Engineer")],
         [("added", "Dear Dr. Musterfrau,")],
         [("added", "towing tanks are where I learned to measure.")],
         [("added", "Kind regards")],

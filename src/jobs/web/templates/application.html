@@ -88,6 +88,17 @@
       {% if previewed %}
       <p class="note" role="status">{{ no_printer }}</p>
       {% endif %}
+      {% if not standing.letter %}
+      {# Everything in a first version is new, so marking it would say nothing: it is set as it
+         will read. #}
+      <p class="note">{% if not standing.read_only %}A first version is waiting. It reads here as it will in the Letter,
+        and the Letter stays empty until you accept.{% else %}A first version was waiting when the Status changed, and stays undecided.{% endif %}</p>
+      <div class="difference first">
+        {%- for paragraph in standing.difference %}
+        <p>{% for span in paragraph %}<ins>{{ span.text|markdown_inline }}</ins>{% endfor %}</p>
+        {%- endfor %}
+      </div>
+      {% else %}
       <p class="note">{% if not standing.read_only %}A Revision is waiting. What it adds is marked, what it removes is struck
         through, and the Letter stays as it is until you accept.{% else %}A Revision was waiting when the Status changed, and stays undecided. What it adds is
         marked, what it removes is struck through.{% endif %}</p>
@@ -96,6 +107,7 @@
         <p>{% for span in paragraph %}{% if span.change == 'added' %}<ins>{{ span.text }}</ins>{% elif span.change == 'removed' %}<del>{{ span.text }}</del>{% else %}{{ span.text }}{% endif %}{% endfor %}</p>
         {%- endfor %}
       </div>
+      {% endif %}
       {% endif %}
       {% if not standing.read_only %}
       <div class="decide">
@@ -172,7 +184,11 @@
           {% else %}
           <div class="message-from">{{ 'You' if message.author == 'applicant' else 'Model' }}
             {%- if message.revision %} <span class="message-revision">Revision: {{ message.revision.value|capitalize }}</span>{% endif %}</div>
+          {% if message.author == 'applicant' %}
           <div class="message-text">{{ message.text }}</div>
+          {% else %}
+          <div class="message-text written-by-model">{{ message.text|markdown }}</div>
+          {% endif %}
           {% endif %}
         </li>
         {% endfor %}

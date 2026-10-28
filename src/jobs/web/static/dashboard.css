@@ -646,6 +646,15 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 .difference p:last-child { margin-bottom: 0; }
 .difference ins { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .difference del { color: var(--strike); text-decoration-thickness: 1px; }
+/* A first version has nothing to differ from: it is set as the Letter it would make. */
+.difference.first ins { color: inherit; text-decoration: none; }
+/* What a model writes is Markdown, set as such. */
+.written-by-model { white-space: normal; }
+.written-by-model > :first-child { margin-top: 0; }
+.written-by-model > :last-child { margin-bottom: 0; }
+.written-by-model p, .written-by-model ul, .written-by-model ol { margin: 0 0 0.7em; }
+.written-by-model ul, .written-by-model ol { padding-left: 1.2em; }
+.written-by-model li + li { margin-top: 0.3em; }
 .letter-pdf { display: block; width: 100%; aspect-ratio: 210 / 297; border: 1px solid var(--hair); background: #fff; box-shadow: var(--lift); }
 
 /* Accept and Reject, side by side under the difference, half the width each. */

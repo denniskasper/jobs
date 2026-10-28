@@ -60,12 +60,18 @@ await run({
 
   hooks: {
     sandbox: {
+      // One command, not several: Sandcastle runs the commands of one hook in parallel, and each
+      // of these needs the one before it.
       onSandboxReady: [
-        // AGENTS.md asks for a virtualenv built with Python 3.14 itself.
-        { command: "python3.14 -m venv .venv && .venv/bin/pip install -q -e '.[dev]'" },
-        // The browser the version of Playwright just installed expects. Already in the mounted
-        // cache unless Playwright was upgraded, in which case it is fetched once.
-        { command: '.venv/bin/playwright install --only-shell chromium' },
+        {
+          // AGENTS.md asks for a virtualenv built with Python 3.14 itself. Then the browser the
+          // Playwright just installed expects: already in the mounted cache unless Playwright
+          // was upgraded, in which case it is fetched once.
+          command:
+            "python3.14 -m venv .venv && .venv/bin/pip install -q -e '.[dev]'" +
+            ' && .venv/bin/playwright install --only-shell chromium',
+          timeoutMs: 600_000,
+        },
       ],
     },
   },

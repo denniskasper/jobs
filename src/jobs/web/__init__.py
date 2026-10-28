@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from markdown_it import MarkdownIt
+from markupsafe import Markup
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
@@ -110,6 +112,10 @@ def _sources_marker(shown: Sequence[Registration]) -> Marker | None:
     return TO_BE_KNOWN if shown else None
 
 
+# How what a model writes is set on a page: as the PDF of a Letter sets it, with no markup of its
+# own let through and no image fetched.
+_MARKDOWN = MarkdownIt("commonmark", {"html": False}).disable("image")
+
 # What the Register form asks for.
 REGISTER_FIELDS = ("url", "label", "rule")
 
@@ -155,6 +161,9 @@ def create_app(
     next one, and an answer about a Letter until `app.state.letters` is told to fetch it."""
     templates = Jinja2Templates(directory=HERE / "templates")
     templates.env.globals["version"] = __version__
+    # A model writes Markdown. It is set as such, and any markup in it is shown, never run.
+    templates.env.filters["markdown"] = lambda text: Markup(_MARKDOWN.render(text))
+    templates.env.filters["markdown_inline"] = lambda text: Markup(_MARKDOWN.renderInline(text))
     # A browser keeps a stylesheet it has seen, so the address it is linked at names what it
     # holds: a new one is fetched with the first page that wants it.
     stylesheet = (HERE / "static" / "dashboard.css").read_bytes()

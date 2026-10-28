@@ -76,7 +76,7 @@ def part(page: str, title: str) -> str:
 def difference_on(page: str) -> list[list[tuple[str, str]]] | None:
     """The difference a page shows, paragraph for paragraph: what was added, what was removed
     and what stayed, in order. None when the page shows none."""
-    found = re.search(r'<div class="difference"[^>]*>(.*?)</div>', page, re.DOTALL)
+    found = re.search(r'<div class="difference[^"]*"[^>]*>(.*?)</div>', page, re.DOTALL)
     if not found:
         return None
     paragraphs = []
@@ -84,7 +84,10 @@ def difference_on(page: str) -> list[list[tuple[str, str]]] | None:
         spans = re.findall(r"<(ins|del)>(.*?)</\1>|([^<]+)", paragraph, re.DOTALL)
         paragraphs.append(
             [
-                ({"ins": "added", "del": "removed", "": "same"}[tag], html.unescape(text or same))
+                (
+                    {"ins": "added", "del": "removed", "": "same"}[tag],
+                    html.unescape(re.sub(r"<[^>]+>", "", text or same)),
+                )
                 for tag, text, same in spans
             ]
         )
@@ -242,7 +245,7 @@ def test_an_answer_shows_its_message_and_its_body_as_a_difference_against_nothin
     assert "Here is a first version. I left out the salary." in part(page, "conversation")
     assert "under way" not in part(page, "conversation")
     assert difference_on(page) == [
-        [("added", "**Application as Research Engineer**")],
+        [("added", "Application as Research Engineer")],
         [("added", "Dear Dr. Musterfrau,")],
         [("added", "towing tanks are where I learned to measure before I believe.")],
         [("added", "Kind regards")],
@@ -252,6 +255,49 @@ def test_an_answer_shows_its_message_and_its_body_as_a_difference_against_nothin
     assert not letter_path(data_dir).exists()
     assert [commit.paths for commit in committer.commits] == [[conversation_path(data_dir)]]
     assert BODY in yaml.safe_load(conversation_path(data_dir).read_text(encoding="utf-8")).values()
+
+
+def test_a_first_version_reads_as_the_letter_it_would_make_with_nothing_marked(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+) -> None:
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+    model.answers.append(ANSWER)
+    ask_for_a_first_version(dashboard)
+    fetch_next_answer(dashboard)
+
+    page = dashboard.get(PAGE).text
+
+    # Everything in it is new, so marking it says nothing: it is set as it will read.
+    assert '<div class="difference first">' in page
+    assert "<strong>Application as Research Engineer</strong>" in page
+    assert "**" not in part(page, "letter")
+    assert "A first version is waiting" in part(page, "letter")
+
+
+def test_a_models_message_reads_as_the_markdown_it_was_written_in(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+) -> None:
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+    model.answers.append(
+        "What I did:\n\n- **The hook**: test rigs.\n- <b>No markup</b> runs.\n\n"
+        f"<letter>\n{BODY}\n</letter>\n"
+    )
+    ask_for_a_first_version(dashboard)
+    fetch_next_answer(dashboard)
+
+    page = dashboard.get(PAGE).text
+
+    assert "<li><strong>The hook</strong>: test rigs.</li>" in page
+    assert "&lt;b&gt;No markup&lt;/b&gt; runs." in page
+    assert "**" not in part(page, "conversation")
 
 
 def test_accepting_writes_the_letter_and_commits_it_with_the_conversation(

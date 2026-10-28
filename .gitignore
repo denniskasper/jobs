@@ -45,6 +45,10 @@ logs/
 tmp/
 .tmp/
 
+# Sandcastle's worktrees, logs and tokens for this repository. Its runner lives outside the
+# repository, in ~/sandcastle-jobs, so that no Node enters it.
+.sandcastle/
+
 # Claude Code local state (skills themselves stay tracked, so they
 # travel to the server and the laptop with the repo)
 .claude/settings.local.json

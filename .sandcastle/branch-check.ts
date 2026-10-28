@@ -2,8 +2,10 @@ import { execFileSync } from 'node:child_process';
 
 // The git commands run in the repository passed in, whatever directory the runner was started from.
 
-// What a run is cut from, and what a branch has to be part of before it counts as finished.
-const BASE = 'origin/main';
+// What a run is cut from, and what a branch has to be part of before it counts as finished. The
+// local `main`, not the remote's: commits made here and not pushed yet belong in the agent's tree,
+// or its branch can no longer be fast-forwarded onto `main`.
+const BASE = 'main';
 
 function git(repo: string, ...args: string[]): string {
   return execFileSync('git', args, {
@@ -79,8 +81,8 @@ export function baseForRun(repo: string, branch: string): string {
     console.log(`'${branch}' holds work that is not on ${BASE} yet. This run adds to it.`);
   }
 
-  // Only read when the branch does not exist: a new one is cut from what is on the remote, not
-  // from whatever happens to be checked out in the repository.
+  // Only read when the branch does not exist: a new one is cut from `main`, not from whatever
+  // happens to be checked out in the repository.
   return BASE;
 }
 

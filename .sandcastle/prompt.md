@@ -29,16 +29,16 @@ Take the ready ticket with the lowest number. Tickets are written in the order t
 
 ## Rules
 
-- **One ticket per iteration.**
+- **One ticket per iteration, then stop.** Once its commit and comment are done, end your turn without the completion signal. The next iteration works out the list afresh, and your commit may have made more tickets ready.
 - **Never push, merge, close an issue or edit an issue's body.** A person does that after reading your work.
 - **Never read or write `data/`**, and never copy anything personal into the repository, a commit message or a comment. Every name, page and Posting in a test is invented (`AGENTS.md`, "Personal data"). `tests/test_no_personal_data.py` must pass.
 - **The server never fetches a page a user brought in**, on any site; tests use the fixtures' network, which refuses every request.
 - **Never change `.sandcastle/`**: it is how you are run, and a person changes it.
 - No commented-out code, no TODO comments.
-- If you are blocked (missing context, checks you cannot get green, something only a person can decide), leave one comment on the ticket saying so, unless one saying the same is already there, and move on to the next ready ticket.
+- If you are blocked (missing context, checks you cannot get green, something only a person can decide), leave one comment on the ticket saying so, unless one saying the same is already there. Then take the next ready ticket that carries no such comment of yours; a ticket you already said you are blocked on is skipped until a person answers.
 
 # Done
 
-When every ready ticket is done or blocked, or the list at the top is empty, output the completion signal:
+Only when the list at the top is empty, or every ticket in it carries your comment that you are blocked on it, output the completion signal instead of working:
 
 <promise>COMPLETE</promise>

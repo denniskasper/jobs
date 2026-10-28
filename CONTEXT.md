@@ -65,15 +65,18 @@ schema version.
 _Avoid_: metadata, audit
 
 **Posting**:
-A position observed at a Source. Its *identity* is stable: re-fetching the same position next week
-yields the same Posting, not a new one, and its content is refreshed in place. A Posting may have no
-URL, when it stands for an employer worth an unsolicited approach rather than an advertised opening.
+A position observed at a Source, or *brought in by hand* from the applicant's own browser. Its
+*identity* is stable: re-fetching the same position next week yields the same Posting, not a new
+one, and its content is refreshed in place. A Posting may have no URL, when it stands for an
+employer worth an unsolicited approach rather than an advertised opening. One brought in by hand
+belongs to no Source and is never polled, proposed or aged out; it is fixed as it was brought in,
+except that one brought in without its text may be given it later, once.
 _Avoid_: job, offering, vacancy, position, Stelle, lead, opportunity
 
 **Application**:
 A folder, its Documents and a status history, representing one pursuit of one employer. It holds at
-most one Posting: created at the Pursue Gate it holds the Posting that was ticked, but an unsolicited
-approach written by hand has none. This is what the dashboard lists.
+most one Posting: created at the Pursue Gate it holds the Posting that was ticked, created by hand
+it holds the Posting brought in with it, and an unsolicited approach written by hand has none. This is what the dashboard lists.
 _Avoid_: bewerbung, submission, case
 
 **Packet**:

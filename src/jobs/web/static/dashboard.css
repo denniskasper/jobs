@@ -649,12 +649,13 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 /* A first version has nothing to differ from: it is set as the Letter it would make. */
 .difference.first ins { color: inherit; text-decoration: none; }
 /* What a model writes is Markdown, set as such. */
-.written-by-model { white-space: normal; }
+.message-text.written-by-model { white-space: normal; }
 .written-by-model > :first-child { margin-top: 0; }
 .written-by-model > :last-child { margin-bottom: 0; }
 .written-by-model p, .written-by-model ul, .written-by-model ol { margin: 0 0 0.7em; }
 .written-by-model ul, .written-by-model ol { padding-left: 1.2em; }
 .written-by-model li + li { margin-top: 0.3em; }
+.written-by-model li > p { margin: 0; }
 .letter-pdf { display: block; width: 100%; aspect-ratio: 210 / 297; border: 1px solid var(--hair); background: #fff; box-shadow: var(--lift); }
 
 /* Accept and Reject, side by side under the difference, half the width each. */

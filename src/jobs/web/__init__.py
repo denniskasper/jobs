@@ -54,6 +54,7 @@ from jobs.sources import (
     set_enabled,
 )
 from jobs.sources import accept as accept_rederivation
+from jobs.web import bookmark
 
 HERE = Path(__file__).parent
 
@@ -122,6 +123,9 @@ REGISTER_FIELDS = ("url", "label", "rule")
 
 # What the page that creates an Application asks for.
 CREATE_FIELDS = ("company", "role", "link", "deadline", "text")
+
+# Set by the bookmark button when the selection it brings was cut.
+CUT = "cut"
 
 # What the user writes down on an Application's page.
 WRITTEN_FIELDS = ("notes", "address")
@@ -237,15 +241,30 @@ def create_app(
         request: Request,
         entered: dict[str, str],
         refusal: Refused | None = None,
+        cut: bool = False,
     ) -> Response:
-        return page(request, "new_application.html", {"entered": entered}, refusal)
+        return page(
+            request,
+            "new_application.html",
+            {
+                "entered": entered,
+                "cut": cut,
+                "bookmark": bookmark.button(str(request.url_for("new_application"))),
+            },
+            refusal,
+        )
 
     def new_application(request: Request) -> Response:
         # Opened filled in, by a share or a bookmark, it only shows the form: nothing is created
         # until Create is pressed, and nothing is fetched at all.
         query = request.query_params
         entered = {field: query.get(field, "") for field in CREATE_FIELDS}
-        return render_new(request, guess.filled_in(entered, title=query.get("title", "")))
+        return render_new(
+            request,
+            guess.filled_in(entered, title=query.get("title", "")),
+            # The bookmark button says so when it cut the selection to fit in an address.
+            cut=CUT in query,
+        )
 
     async def create(request: Request) -> Response:
         form = await request.form()

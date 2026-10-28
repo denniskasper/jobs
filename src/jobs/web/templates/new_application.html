@@ -39,11 +39,18 @@
         <label class="form-label" for="text">The Posting's text, optional</label>
         <textarea class="form-input" id="text" name="text"
                   rows="{{ [entered.text.count('\n') + 2, 10]|max }}">{{ entered.text }}</textarea>
+        {% if cut %}
+        <p class="note">The selection was cut to fit in an address: what came after this is
+          missing. Paste the rest if you want it kept.</p>
+        {% endif %}
       </div>
       <p class="note form-group">Starts at To do, dated {{ today.isoformat() }}. With a link or a
         text it holds the Posting as you brought it in; with neither, it holds no Posting. Nothing
         is fetched.</p>
       <button type="submit" class="add">Create</button>
     </form>
+    <p class="note">Drag <a class="bookmark" href="{{ bookmark }}">Bring in</a> to your
+      bookmarks bar: pressed on a Posting's page, it opens this form with that page's title,
+      address and the text you selected.</p>
   </div>
 {% endblock %}

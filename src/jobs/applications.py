@@ -5,6 +5,7 @@ the record; `application.yaml` inside it is its metadata. Files are edited by ha
 that cannot be read is reported as a Problem beside the ones that can, never raised.
 """
 
+import re
 import shutil
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -53,6 +54,34 @@ _STATUS_LABELS = {
 }
 
 
+class Channel(StrEnum):
+    """How a Packet reached an employer. The value is what is written in the record."""
+
+    PORTAL = "portal"
+    EMAIL = "email"
+
+    @property
+    def label(self) -> str:
+        return _CHANNEL_LABELS[self]
+
+
+_CHANNEL_LABELS = {Channel.PORTAL: "Portal", Channel.EMAIL: "Email"}
+
+# What an Email can go to: something before an at sign and a domain after it.
+_EMAIL_ADDRESS = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+
+@dataclass(frozen=True)
+class Submission:
+    """One act of sending a Packet, as the record keeps it."""
+
+    at: datetime
+    channel: Channel
+    where: str
+    manifest: dict[str, str]
+    """Every filename in the Packet, in the order it was listed, and the SHA-256 of its bytes."""
+
+
 @dataclass(frozen=True)
 class Application:
     folder: str
@@ -65,7 +94,8 @@ class Application:
     address: str = ""
     """The employer's address, line for line as it was typed."""
     sent: bool = False
-    """Whether it went out: its Status became `waiting` or `interview` at some point."""
+    """Whether it went out: a Submission was recorded, or its Status became `waiting` or
+    `interview` at some point."""
     sent_on: _Day | None = None
     """Its Sent date, None when it was not sent or nobody recorded the day."""
 
@@ -348,6 +378,118 @@ def change_status(data_dir: Path, committer: Committer, folder: str, *, to: str,
         # With the record, so that what a failed commit left behind is committed too.
         [path, *_posting_in(path.parent), *documents.links_in(data_dir, path.parent)],
     )
+
+
+def record_submission(
+    data_dir: Path,
+    committer: Committer,
+    folder: str,
+    *,
+    channel: str,
+    where: str,
+    manifest: dict[str, str],
+    frozen: Sequence[Path],
+    at: datetime,
+) -> Submission:
+    """Record that the Application in `folder` sent a Packet with this `manifest` by `channel` to
+    `where`, at `at`, and move its Status from `todo` to `waiting`, in one commit with the
+    `frozen` files that hold what was sent. The Submissions recorded before stay as they are.
+    Raises NotFound, Refused and NotCommitted."""
+    path = directory_of(data_dir, folder) / RECORD_NAME
+    submission = _submission_entered(channel, where, manifest, at)
+    try:
+        record = records.load(path)
+        current = _parse(record, folder).status
+        history = _history(record, current)
+        # Read only to refuse what cannot be added to: the earlier ones are written back as
+        # they are.
+        _submissions(record)
+    except Malformed as malformed:
+        raise Refused(f"{folder} was left as it is, fix it by hand first: {malformed}.") from None
+    refuse_unless_todo(current)
+    record["status"] = Status.WAITING.value
+    record["history"] = [*history, _history_entry(Status.WAITING, at.date())]
+    record["submissions"] = [*(record.get("submissions") or []), _entry(submission)]
+    records.write(path, _dump(record))
+    _commit(
+        committer,
+        f"Record Submission of {folder} by {submission.channel.value}, from todo to waiting",
+        folder,
+        [path, *frozen, *_posting_in(path.parent), *documents.links_in(data_dir, path.parent)],
+    )
+    return submission
+
+
+def refuse_unless_todo(status: Status) -> None:
+    """Refuse to mark sent an Application that is not `todo`: one is marked sent once per time
+    it is set to `todo`."""
+    if status is not Status.TODO:
+        raise Refused(
+            f"This Application is {status.label}, so it cannot be marked sent. Set it back to "
+            f"{Status.TODO.label} and build a Packet to send it again."
+        )
+
+
+def _submission_entered(
+    channel: str, where: str, manifest: dict[str, str], at: datetime
+) -> Submission:
+    try:
+        chosen = Channel(channel)
+    except ValueError:
+        raise Refused(f"The Channel has to be one of: {', '.join(Channel)}.") from None
+    where = where.strip()
+    if not where:
+        raise Refused("Say where it went: the portal's address, or the email address.")
+    if chosen is Channel.EMAIL and not _EMAIL_ADDRESS.fullmatch(where):
+        raise Refused(f"An Email goes to an email address, and {where} is none.")
+    return Submission(at=at, channel=chosen, where=where, manifest=dict(manifest))
+
+
+def _entry(submission: Submission) -> dict[str, Any]:
+    return {
+        "at": submission.at,
+        "channel": submission.channel.value,
+        "where": submission.where,
+        "manifest": dict(submission.manifest),
+    }
+
+
+def submissions_of(data_dir: Path, folder: str) -> list[Submission]:
+    """The Submissions of the Application in `folder`, in the order they were recorded. Raises
+    NotFound and Malformed."""
+    return _submissions(records.load(directory_of(data_dir, folder) / RECORD_NAME))
+
+
+def _submissions(record: dict[Any, Any]) -> list[Submission]:
+    """The Submissions the record holds. Raises Malformed."""
+    entries = record.get("submissions")
+    if entries is None:
+        return []
+    if not isinstance(entries, list):
+        raise Malformed("submissions is not a list")
+    found = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise Malformed("each of submissions is a mapping of at, channel, where and manifest")
+        at = entry.get("at")
+        if not isinstance(at, datetime):
+            raise Malformed("at of a Submission is missing or is not a time")
+        try:
+            channel = Channel(str(entry.get("channel")))
+        except ValueError:
+            raise Malformed(f"channel of a Submission is one of: {', '.join(Channel)}") from None
+        manifest = entry.get("manifest")
+        if not isinstance(manifest, dict) or not all(
+            isinstance(name, str)
+            and not documents.name_problem(name)
+            and isinstance(hashed, str)
+            and documents.is_hash(hashed)
+            for name, hashed in manifest.items()
+        ):
+            raise Malformed("manifest of a Submission maps filenames to SHA-256 hashes")
+        where = records.text_of(entry, "where")
+        found.append(Submission(at=at, channel=channel, where=where, manifest=manifest))
+    return found
 
 
 def delete_application(
@@ -733,9 +875,20 @@ _GONE_OUT = (Status.WAITING, Status.INTERVIEW)
 
 
 def _sent(record: dict[Any, Any], status: Status) -> dict[str, Any]:
-    """Whether the Application went out, and on which day: the first time its history reached
-    `waiting` or `interview`. A history written by hand is read as far as it can be, and one that
-    says nothing leaves the current Status to decide."""
+    """Whether the Application went out, and on which day: the day of its first Submission, or
+    without one the first time its history reached `waiting` or `interview`. What was written by
+    hand is read as far as it can be, and a history that says nothing leaves the current Status
+    to decide."""
+    submitted = record.get("submissions")
+    if isinstance(submitted, list) and submitted:
+        days = [
+            entry["at"].date()
+            for entry in submitted
+            if isinstance(entry, dict) and isinstance(entry.get("at"), datetime)
+        ]
+        if days:
+            return {"sent": True, "sent_on": min(days)}
+        return {**_sent({"history": record.get("history")}, status), "sent": True}
     history = record.get("history")
     for entry in history if isinstance(history, list) else []:
         if isinstance(entry, dict) and entry.get("status") in _GONE_OUT:

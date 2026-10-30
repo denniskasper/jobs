@@ -6,15 +6,20 @@ builds its own PDF; merged files follow the Application's order with the Letter 
 resume next, and an image becomes an A4 page of its own. The files are named in German after the
 surname of the applicant the Letter is from, which `letter/applicant.yaml` in the data directory
 says, written by hand like the template the Letter is set in (decision 60).
+
+Marking an Application sent freezes the Packet as it was built: what it was built from is kept
+beside its files, and a Packet built from another Letter or other Documents than the Application
+has now is not marked sent (decision 61).
 """
 
+import hashlib
 import io
 import re
 import shutil
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
@@ -22,13 +27,25 @@ import pypdf
 from PIL import Image, ImageOps
 
 from jobs import documents, records
-from jobs.applications import Status, directory_of, documents_of, read_application
+from jobs.applications import (
+    Application,
+    Status,
+    Submission,
+    directory_of,
+    documents_of,
+    read_application,
+    record_submission,
+    refuse_unless_todo,
+)
 from jobs.commits import CommitFailed, Committer
 from jobs.letters import Letters
 from jobs.printing import FOLDER_NAME, NotPrinted, Printer, letter_page
 from jobs.records import Malformed, NotCommitted, Refused
 
 PACKET_NAME = "packet"
+
+# What a Packet was built from, beside its files, where no download offers it.
+BUILT_FROM_NAME = ".built-from.yaml"
 
 # Who the Letters are from, as far as a Packet needs to know: beside the Letter's own template.
 APPLICANT_NAME = "applicant.yaml"
@@ -99,13 +116,14 @@ def build(
     except ValueError:
         raise Refused(f"The shape has to be one of: {', '.join(Shape)}.") from None
     with _one_at_a_time:
-        files = _files(data_dir, letters, printer, folder, chosen, on)
+        files, built_from = _files(data_dir, letters, printer, folder, chosen, on)
         packet = directory_of(data_dir, folder) / PACKET_NAME
         try:
             shutil.rmtree(packet, ignore_errors=True)
             packet.mkdir()
             for name, content in files.items():
                 (packet / name).write_bytes(content)
+            records.write(packet / BUILT_FROM_NAME, records.dump(built_from))
         except OSError as error:
             raise Refused(f"The Packet could not be written: {error.strerror}.") from error
         try:
@@ -140,6 +158,66 @@ def built(data_dir: Path, folder: str) -> list[str]:
     return sorted(names, key=place)
 
 
+def mark_sent(
+    data_dir: Path,
+    committer: Committer,
+    letters: Letters,
+    folder: str,
+    *,
+    channel: str,
+    where: str,
+    at: datetime,
+) -> Submission:
+    """Record a Submission of the Packet built for the Application in `folder`, by `channel` to
+    `where` at `at`: its files are kept in the store by their hashes, which its Manifest names,
+    and the Status moves from `todo` to `waiting`, in one commit. Refused unless a Packet was
+    built from the Letter and the Documents the Application has now. Raises NotFound, Refused and
+    NotCommitted."""
+    with _one_at_a_time:
+        application = read_application(data_dir, folder)
+        refuse_unless_todo(application.status)
+        names = built(data_dir, folder)
+        if not names:
+            raise Refused("No Packet has been built: build the one you sent first.")
+        packet = directory_of(data_dir, folder) / PACKET_NAME
+        standing = letters.look(folder)
+        if standing.problem:
+            raise Refused(f"The Letter could not be read: {standing.problem}.")
+        try:
+            then = records.load(packet / BUILT_FROM_NAME)
+        except Malformed:
+            then = {}
+        if then != _built_from(application, standing.letter, _held(data_dir, folder)):
+            raise Refused(
+                "The Letter or the Documents changed after the Packet was built, so it is not "
+                "what this Application would send now: build it again first."
+            )
+        try:
+            contents = {name: (packet / name).read_bytes() for name in names}
+            frozen = [documents.keep(data_dir, name, content) for name, content in contents.items()]
+        except OSError as error:
+            raise Refused(f"The Packet could not be kept: {error.strerror}.") from error
+        return record_submission(
+            data_dir,
+            committer,
+            folder,
+            channel=channel,
+            where=where,
+            manifest={name: _hash(content) for name, content in contents.items()},
+            frozen=frozen,
+            at=at,
+        )
+
+
+def sent_file(data_dir: Path, submission: Submission, name: str) -> Path:
+    """The file called `name` as `submission` sent it, from the store. Raises NotFound."""
+    content_hash = submission.manifest.get(name)
+    path = documents.stored(data_dir, name, content_hash) if content_hash else None
+    if path is None or not path.is_file():
+        raise records.NotFound(f"The store holds no {name} as it was sent.")
+    return path
+
+
 def file_of(data_dir: Path, folder: str, name: str) -> Path:
     """The built file called `name` of the Application in `folder`. Raises NotFound."""
     path = directory_of(data_dir, folder) / PACKET_NAME / name
@@ -155,8 +233,9 @@ def downloadable(path: Path) -> bool:
 
 def _files(
     data_dir: Path, letters: Letters, printer: Printer, folder: str, shape: Shape, on: date
-) -> dict[str, bytes]:
-    """The files of the Packet, by name. Raises NotFound and Refused."""
+) -> tuple[dict[str, bytes], dict[str, object]]:
+    """The files of the Packet, by name, and what they were built from. Raises NotFound and
+    Refused."""
     application = read_application(data_dir, folder)
     if application.status is not Status.TODO:
         raise Refused(
@@ -191,6 +270,7 @@ def _files(
         raise Refused(f"The Letter could not be set: {malformed}.") from None
     except NotPrinted as not_printed:
         raise Refused(str(not_printed)) from None
+    built_from = _built_from(application, standing.letter, held)
     after_letter = ([resume] if resume else []) + rest
     if shape is Shape.EVERYTHING:
         parts = {f"{surname}_{_EVERYTHING}.pdf": [letter, *after_letter]}
@@ -209,8 +289,27 @@ def _files(
         # Each as it is, whatever it is: nothing is merged.
         for each in held:
             _as_pdf(each)
-        return {letter.name: letter.content, **{each.name: each.content for each in held}}
-    return {name: _merged(merged) for name, merged in parts.items() if merged}
+        return {
+            letter.name: letter.content,
+            **{each.name: each.content for each in held},
+        }, built_from
+    return {name: _merged(merged) for name, merged in parts.items() if merged}, built_from
+
+
+def _built_from(
+    application: Application, letter: str, held: Sequence[_Document]
+) -> dict[str, object]:
+    """What a Packet of `application` is built from, by hash: the Letter's body, the address it
+    goes to, and each Document in order. Not the day the Letter is dated, which it gets anew."""
+    return {
+        "letter": _hash(letter.encode()),
+        "address": _hash(application.address.encode()),
+        "documents": [{each.name: _hash(each.content)} for each in held],
+    }
+
+
+def _hash(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()
 
 
 def _surname(data_dir: Path) -> str:

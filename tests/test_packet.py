@@ -93,8 +93,11 @@ def build(dashboard: TestClient, shape: str | None = None, status: int = 200) ->
 
 
 def built_files(folder: Path) -> list[str]:
+    """The files built into the Packet, without what it keeps about what it was built from."""
     packet = folder / "packet"
-    return sorted(each.name for each in packet.iterdir()) if packet.is_dir() else []
+    if not packet.is_dir():
+        return []
+    return sorted(each.name for each in packet.iterdir() if not each.name.startswith("."))
 
 
 def offered(page: str) -> dict[str, str]:

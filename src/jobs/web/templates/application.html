@@ -21,6 +21,7 @@
     <a href="#posting">Posting</a>
     <a href="#documents">Documents</a>
     <a href="#packet">Packet</a>
+    {% if submissions or submissions_problem %}<a href="#submissions">Submissions</a>{% endif %}
     <a href="#letter">Letter</a>
     <a href="#conversation">Conversation</a>
   </nav>
@@ -169,6 +170,23 @@
         <li class="held-document"><a class="packet-file" href="{{ url_for('packet_file', folder=application.folder, name=name) }}" download>{{ name }}</a></li>
         {% endfor %}
       </ul>
+      {% if application.status == 'todo' %}
+      <form method="post" action="{{ url_for('mark_sent', folder=application.folder) }}" class="written">
+        <fieldset class="form-group shapes">
+          <legend class="form-label">Sent by</legend>
+          {% for channel in channels %}
+          <label class="shape"><input type="radio" name="channel" value="{{ channel.value }}"{% if channel.value == sending.channel %} checked{% endif %}> {{ channel.label }}</label>
+          {% endfor %}
+        </fieldset>
+        <div class="form-group">
+          <label class="form-label" for="where">Where it went</label>
+          <input class="form-input" id="where" name="where" type="text" autocomplete="off" value="{{ sending.where }}">
+          <p class="note">The portal's address, or the email address. Once you have sent these files, marking
+            them sent keeps them as they are and sets the Status to Waiting.</p>
+        </div>
+        <button type="submit" class="add">Mark sent</button>
+      </form>
+      {% endif %}
       {% else %}
       <p class="note">No Packet has been built.</p>
       {% endif %}
@@ -190,6 +208,29 @@
       </form>
       {% endif %}
     </section>
+
+    {% if submissions or submissions_problem %}
+    <section class="application-part" id="submissions" aria-labelledby="submissions-title">
+      <h2 class="application-title" id="submissions-title">Submissions</h2>
+      {% if submissions_problem %}
+      <p class="note" role="alert"><strong>Its Submissions could not be read.</strong>
+        {{ submissions_problem }}. Fix <span class="mono">application.yaml</span> by hand and reload.</p>
+      {% endif %}
+      {% for submission in submissions %}
+      {% set number = loop.index %}
+      <div class="submission">
+        <p class="filed"><span class="mono">{{ submission.at.strftime('%Y-%m-%d %H:%M') }}</span>
+          by {{ submission.channel.label }} to <span class="mono">{{ submission.where }}</span></p>
+        <ul class="held packet">
+          {% for name, content_hash in submission.manifest.items() %}
+          <li class="held-document"><a class="sent-file" href="{{ url_for('sent_file', folder=application.folder, number=number, name=name) }}" download>{{ name }}</a>
+            <span class="held-about mono" title="SHA-256 {{ content_hash }}">{{ content_hash[:12] }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
     </div>
 
     <section class="application-part" id="letter" aria-labelledby="letter-title">

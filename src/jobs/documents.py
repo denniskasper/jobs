@@ -7,8 +7,8 @@ can be added to an Application later as well. The links are relative symlinks, w
 they are, so they resolve in every clone. An Application that was never sent follows a name to its
 newest bytes; which ones those are is for `applications` to say.
 
-Only the scaffolding half of ADR 0002 lives here. Nothing is frozen and no Manifest is written;
-both belong to the Send Gate.
+The files of a Packet that was sent are kept in the same store by their hashes, which the
+Manifest of its Submission names.
 """
 
 import hashlib
@@ -30,7 +30,8 @@ SHARED_NAME = "shared.yaml"
 _NOT_DOCUMENTS = ("application.yaml", "posting.yaml", "letter.md", "conversation.yaml", "packet")
 
 _EXTENSION = r"\.[a-z0-9]{1,10}"
-_STORED = re.compile(rf"[0-9a-f]{{64}}({_EXTENSION})?")
+_HASH = re.compile(r"[0-9a-f]{64}")
+_STORED = re.compile(rf"{_HASH.pattern}({_EXTENSION})?")
 
 # What a Document can be, told by how its bytes begin, and the extensions its name may have.
 _KINDS = {"PDF": b"%PDF-", "PNG": b"\x89PNG\r\n\x1a\n", "JPG": b"\xff\xd8\xff"}
@@ -155,6 +156,26 @@ def refuse_unless_document(name: str, content: bytes) -> None:
         raise Refused(f"Only a PDF, JPG or PNG can be a Document, and {name} is none of them.")
     if PurePosixPath(name).suffix.lower() not in _EXTENSIONS[kind]:
         raise Refused(f"{name} is a {kind}, so its name has to end in {_EXTENSIONS[kind][0]}.")
+
+
+def is_hash(text: str) -> bool:
+    """Whether `text` is a SHA-256 written as the store names its files."""
+    return bool(_HASH.fullmatch(text))
+
+
+def keep(data_dir: Path, name: str, content: bytes) -> Path:
+    """Keep `content`, sent under `name`, in the store by its hash, unless it is held already,
+    and give back where it is."""
+    target = stored(data_dir, name, hashlib.sha256(content).hexdigest())
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not _holds(target, content):
+        _write_bytes(target, content)
+    return target
+
+
+def stored(data_dir: Path, name: str, content_hash: str) -> Path:
+    """Where the store keeps the bytes with this hash, sent under `name`."""
+    return _store(data_dir) / (content_hash + _suffix(name))
 
 
 def link(data_dir: Path, shared: Sequence[SharedDocument], *, into: Path) -> list[Path]:

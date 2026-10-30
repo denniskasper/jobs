@@ -97,6 +97,11 @@ your surname, which `data/letter/applicant.yaml` names as `surname: <your surnam
 Packet is built. Merged files put the resume right after the Letter: it is the Document whose name
 says Lebenslauf, CV or resume.
 
+Once you have sent the Packet yourself, mark the Application sent from the same page, saying by
+Portal or Email and where it went. That records a Submission: the built files are kept in the
+store by their hashes, which its Manifest names, and the Status moves to waiting. A Packet built
+before the Letter or the Documents changed has to be built again first.
+
 ## No login
 
 The app has no login. Both ways above listen on your own machine only, at `127.0.0.1`; do not

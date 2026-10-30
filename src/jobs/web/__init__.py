@@ -32,6 +32,7 @@ from jobs import __version__, guess, packets
 from jobs.applications import (
     AlreadyBroughtIn,
     Application,
+    Channel,
     Status,
     add_shared,
     change_status,
@@ -48,6 +49,7 @@ from jobs.applications import (
     posting_of,
     read_application,
     refuse_if_sent,
+    submissions_of,
     write_down,
 )
 from jobs.clock import Clock
@@ -416,6 +418,7 @@ def create_app(
         text: str = "",
         not_done: str = "",
         about: str = "documents",
+        sending: dict[str, str] | None = None,
     ) -> Response:
         # Another address than the Application's own shows it when a link brought in again led
         # there with a text.
@@ -441,6 +444,10 @@ def create_app(
             # The Documents tab says why; here there is only nothing to add.
             shared = []
         packet = packets.built(data_dir, folder)
+        try:
+            submissions, submissions_problem = submissions_of(data_dir, folder), None
+        except Malformed as malformed:
+            submissions, submissions_problem = [], str(malformed)
         return page(
             request,
             "application.html",
@@ -475,6 +482,13 @@ def create_app(
                 "shapes": list(packets.Shape),
                 "default_shape": packets.DEFAULT,
                 "no_packet_printer": packets.NO_PRINTER,
+                "submissions": submissions,
+                "submissions_problem": submissions_problem,
+                "channels": list(Channel),
+                # What marking sent starts with: the Posting's URL by Portal, or what was entered
+                # and refused.
+                "sending": sending
+                or {"channel": Channel.PORTAL.value, "where": posting.url if posting else ""},
                 # A refusal about its Documents or its Packet is said beside them, under what was
                 # not done.
                 "entered": {about: not_done} if not_done else {},
@@ -624,6 +638,40 @@ def create_app(
             return render_application(request, not_committed)
         return RedirectResponse(
             str(request.url_for("application", folder=folder)) + "#packet", status_code=303
+        )
+
+    async def mark_sent(request: Request) -> Response:
+        form = await request.form()
+        folder = request.path_params["folder"]
+        sending = {name: str(form.get(name, "")) for name in ("channel", "where")}
+        try:
+            await run_in_threadpool(
+                packets.mark_sent, data_dir, committer, letters, folder, **sending, at=clock()
+            )
+        except Refused as refusal:
+            return render_application(
+                request, refusal, not_done="Not marked sent.", about="packet", sending=sending
+            )
+        except NotCommitted as not_committed:
+            return render_application(request, not_committed)
+        return RedirectResponse(
+            str(request.url_for("application", folder=folder)) + "#submissions", status_code=303
+        )
+
+    def sent_file(request: Request) -> Response:
+        folder, name = request.path_params["folder"], request.path_params["name"]
+        try:
+            submissions = submissions_of(data_dir, folder)
+            at = request.path_params["number"] - 1
+            if not 0 <= at < len(submissions):
+                raise NotFound(f"{folder} has no Submission {at + 1}.")
+            path = packets.sent_file(data_dir, submissions[at], name)
+        except (NotFound, Malformed) as not_found:
+            return PlainTextResponse(str(not_found), status_code=404)
+        return FileResponse(
+            path,
+            media_type=_MEDIA_TYPES.get(Path(name).suffix.lower(), "application/octet-stream"),
+            filename=name,
         )
 
     def packet_file(request: Request) -> Response:
@@ -1041,6 +1089,8 @@ def create_app(
             ),
             Route("/applications/{folder:path}/packet", build_packet, methods=["POST"]),
             Route("/applications/{folder:path}/packet/{name}", packet_file),
+            Route("/applications/{folder:path}/sent", mark_sent, methods=["POST"]),
+            Route("/applications/{folder:path}/sent/{number:int}/{name}", sent_file),
             Route("/applications/{folder:path}/letter/ask", ask_for_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/say", say_about_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/again", send_again, methods=["POST"]),

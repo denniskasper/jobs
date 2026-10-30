@@ -755,6 +755,13 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
   .posting-text { max-height: 32em; overflow: auto; }
 }
 
+/* Where the screen has room, the Application page takes more of it, and the Letter all it gains:
+   a line of the Letter as long as a printed one, not a column's. */
+@media (min-width: 1400px) {
+  .shell:has(.application) { max-width: 1560px; }
+  .application { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); gap: 40px; }
+}
+
 /* What only a pointer can do. */
 @media (hover: hover) {
   .tab:hover { color: var(--ink-2); }

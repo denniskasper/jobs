@@ -5,12 +5,21 @@ and 32). CI runs the checks on every push and deploys a green `main`. Locally it
 directly (`DATA_DIR=data .venv/bin/python -m jobs`) or from the image (`compose.yaml`).
 
 What follows calls the server **`dokploy`**, its tailnet address `100.x.y.z`, its public address
-`203.0.113.7`, the tailnet `example.ts.net` and the service's hostname `jobs.example.com`. Put your
-own in their place.
+`203.0.113.7`, the tailnet `example.ts.net` and the service's name on it `jobs.example.ts.net`. Put
+your own in their place.
 
-Everything the repository can hold is in it: the `Dockerfile`, `.github/workflows/ci.yaml`,
-`deploy/dokploy-deploy.sh`, `deploy/deploy.sh` and `deploy/verify-not-public.sh`. What follows is
-the part that lives outside it, set up once by hand.
+Everything the repository can hold is in it: the `Dockerfile`, `.github/workflows/ci.yaml`, and
+under `deploy/`:
+
+- `compose.tailnet.yaml`, the compose service Dokploy deploys: the application beside a Tailscale
+  sidecar, sharing its network.
+- `serve.json`, how the sidecar serves the application on the tailnet.
+- `dokploy-deploy.sh`, which asks Dokploy to deploy and waits for it, for CI and by hand alike.
+- `deploy.sh`, a deployment by hand: the checks, the guards, then `dokploy-deploy.sh`.
+- `verify-not-public.sh`, which asks for the dashboard the way a stranger would and fails if it
+  answers.
+
+What follows is the part that lives outside it, set up once by hand.
 
 ## What the container expects
 
@@ -92,148 +101,122 @@ login, no mail account (decisions 24 and 33).
 
 ## Dokploy, once
 
-On `dokploy`, a new project **`jobs`**, holding a single service. There is no database service
-to add: files are the database (ADR 0002), and the only state is the git clone in the volume.
+On `dokploy`, a new project **`jobs`**, environment `production`, holding a single service. There
+is no database service to add: files are the database (ADR 0002), and the only state is the git
+clone in the volume.
 
-1. New **Application**. Provider: GitHub, repository `jobs`, branch `main`, build type
-   **Dockerfile**, path `Dockerfile`, context `.`. If the repository is private, the Dokploy GitHub
-   App needs access granted to it.
-2. General → **Auto Deploy: off**, and no `On Push` trigger. This may differ from other
-   applications on the host, and deliberately: if Dokploy listened to the push, the checks and the
-   deployment would race and a red run would ship anyway (decision 31b). GitHub Actions triggers
-   the deployment instead, after the checks.
-3. Environment: `DATA_REPO_URL`, `DATA_REPO_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN`. Nothing else —
-   and nothing employer-facing ever (decisions 24 and 33).
-4. Advanced → Volumes: a **volume mount**, name `jobs-data`, mount path `/data`. A named volume,
-   not a bind mount: it takes the unprivileged user's ownership from the image on first use.
-5. Domains: `jobs.example.com`, container port **8000**, HTTPS on. See the next section for the
-   certificate, which is the one part that cannot be left at Dokploy's default.
-6. Profile → API keys: generate one for `deploy/deploy.sh` and for the CI deploy job.
+1. New **Compose** service, `web`. Provider: GitHub, repository `jobs`, branch `main`, compose type
+   **docker-compose**, compose path `./deploy/compose.tailnet.yaml`. If the repository is private,
+   the Dokploy GitHub App needs access granted to it. Isolated deployment, randomize, suffix and
+   submodules stay off.
+2. General → **Autodeploy: off**, and no `On Push` trigger. This may differ from other services on
+   the host, and deliberately: if Dokploy listened to the push, the checks and the deployment would
+   race and a red run would ship anyway (decision 31b). GitHub Actions triggers the deployment
+   instead, after the checks.
+3. Environment, with **Create env file** on, so Dokploy writes it to `deploy/.env` beside the
+   compose file, where Compose reads it:
+   - `TS_AUTHKEY`, the sidecar's key to join the tailnet; see below.
+   - `DATA_REPO_URL`, `DATA_REPO_TOKEN` and `CLAUDE_CODE_OAUTH_TOKEN`, as in the table above.
+   - Optionally `MODEL`, `PROSE_MODEL` and `POLL_EVERY_HOURS`. Left unset, each falls back to its
+     default.
+
+   Nothing else, and nothing employer-facing ever (decisions 24 and 33). The compose file refuses
+   to start without the four that are required. What Dokploy adds of its own (`APP_NAME`,
+   `COMPOSE_PROJECT_NAME`, `DOCKER_CONFIG`) is left as it is.
+4. **No domains and no mounts.** Both volumes come from the compose file: `jobs-data`, the
+   application's `/data`, and `tailscale-state`, the sidecar's node identity. They are named
+   volumes, not bind mounts: `jobs-data` takes the unprivileged user's ownership from the image on
+   first use. A domain would give the service a Traefik router, which is exactly the public route
+   this arrangement does without.
+5. Profile → API keys: generate one for `deploy/deploy.sh` and for the CI deploy job.
 
 The compose id, for `DOKPLOY_COMPOSE_ID`, is the last path segment of the service's URL in Dokploy.
-It is a *compose* service -- the application beside its Tailscale sidecar -- so the deploy script
-calls `compose.deploy`, not `application.deploy`.
+It is a *compose* service, so the deploy script calls `compose.deploy`, not `application.deploy`.
 
 **Before the first deployment:** Dokploy builds the branch as GitHub has it, so `main` has to be
 pushed. Nothing is deployable until it is.
 
+### The sidecar's auth key
+
+In the Tailscale admin console, Settings → Keys → **Generate auth key**:
+
+- **One-off**, not reusable. The key is only used on the sidecar's first start; from then on the
+  `tailscale-state` volume holds the node's identity.
+- **Not ephemeral.** An ephemeral node is removed whenever it goes offline, which a redeploy does.
+- **Pre-approved**, where the tailnet requires device approval.
+
+Put it in `TS_AUTHKEY` and deploy. The node joins as `jobs`, the compose file's `hostname`, so the
+application is at `https://jobs.example.ts.net`.
+
+**Then disable key expiry** for the `jobs` machine in the admin console. An untagged node expires
+after the tailnet's key expiry, 180 days by default, and drops off the tailnet, taking the
+application with it — silently, since nothing on the server notices.
+
+A tagged key, say `tag:jobs`, is the alternative: a tagged node has key expiry disabled by itself,
+but the tag needs a `tagOwners` entry in the tailnet policy first, and the node then belongs to the
+tag rather than to a user, outside every rule written for that user.
+
+If the `tailscale-state` volume is ever lost, mint a new one-off key, set `TS_AUTHKEY`, redeploy,
+and remove the old `jobs` machine from the admin console; otherwise the new node comes up as
+`jobs-1`, under another name.
+
 ## Reachable over the tailnet only
 
-Traefik on `dokploy` listens on the public interface too, so a hostname nobody knows is not a
-boundary. Three things make the boundary, and any other private application on the host can share
-the same arrangement.
+The application has no login (decision 32), so the boundary is that nothing outside the tailnet can
+reach it at all.
 
-1. **DNS.** `jobs.example.com` gets an A record of `100.x.y.z`, `dokploy`'s *tailnet* address.
-   That is a CGNAT address, so the record may sit in public DNS: off the tailnet it leads nowhere.
-   It must be **DNS-only, not proxied** — a proxy cannot reach a CGNAT address at all, and if it
-   could, Traefik would see the proxy's address instead of the caller's and the allow-list below
-   would be judging the wrong thing.
-2. **Certificate by DNS-01.** Dokploy's default resolver answers over HTTP, and Let's Encrypt
-   cannot reach a tailnet address to ask. The DNS challenge proves the name by a TXT record
-   instead, which works regardless of where the name points. Dokploy's **DNS Providers** section
-   configures this; if a resolver is already there from another application, reuse it rather than
-   adding a second. One way to add it: a second resolver, `letsencrypt-dns`, in `traefik.yml`
-   beside the HTTP one, with `CF_DNS_API_TOKEN` in Traefik's environment, a Cloudflare token
-   limited to the one zone, with DNS:Edit and Zone:Read.
-3. **An allow-list on the router**, for anyone who presents the hostname to the public address
-   directly.
+The compose service is two containers. The **sidecar**, `tailscale/tailscale`, is a node of its
+own on the tailnet, named `jobs`, in userspace networking: no `/dev/net/tun`, no `NET_ADMIN`, no
+privileged flags. The **application** shares the sidecar's network (`network_mode:
+service:tailscale`), listens on port 8000 there, publishes no port to the host and joins no other
+network.
 
-For an Application, Dokploy generates the router into
-`/etc/dokploy/traefik/dynamic/<service>.yml`, in this shape:
+The sidecar serves it by `deploy/serve.json`, handed over as `TS_SERVE_CONFIG`: HTTPS on 443 under
+the node's own MagicDNS name, `${TS_CERT_DOMAIN}`, which the sidecar fills in as
+`jobs.example.ts.net`, proxied to `http://127.0.0.1:8000`. The certificate is the tailnet's own,
+issued to the node by Tailscale; this needs **MagicDNS** and **HTTPS certificates** enabled in the
+admin console's DNS settings. Nothing in Dokploy or Traefik is involved.
 
-```yaml
-http:
-  routers:
-    <service>-router-1:
-      rule: Host(`<hostname>`)
-      middlewares: [redirect-to-https]
-      entryPoints: [web]
-    <service>-router-websecure-1:
-      rule: Host(`<hostname>`)
-      middlewares: []          # <- the allow-list goes here
-      entryPoints: [websecure]
-      tls:
-        certResolver: letsencrypt   # <- the DNS-01 resolver goes here
-```
+So there is no public route to filter: no Traefik router names the service, no port is published,
+and the name does not resolve off the tailnet. **Funnel stays off** for the node: it is the one
+switch that would put a tailnet name on the public internet.
 
-So in the application's **Advanced → Traefik configuration**, point `certResolver` at the DNS-01
-resolver and attach the middleware to both routers:
+Why a sidecar rather than Traefik's Tailscale certificate resolver: that resolver only issues
+certificates for `<machine>.<tailnet>.ts.net`, so every private application on the server would
+share the one hostname. A sidecar is a node of its own, so `jobs.example.ts.net` is simply its
+name.
 
-```yaml
-http:
-  middlewares:
-    tailnet-only:
-      ipAllowList:
-        sourceRange:
-          - 100.64.0.0/10
-          - fd7a:115c:a1e0::/48
-```
-
-`ipAllowList` is the Traefik v3 name. Under v2 it was `ipWhiteList`.
-
-**Put those edits in Dokploy's Advanced → Traefik configuration, never in the file on disk.**
-Dokploy regenerates `/etc/dokploy/traefik/dynamic/<service>.yml` on every deployment, so a hand
-edit there survives until the next deploy and then silently disappears — taking the allow-list with
-it and leaving an unauthenticated dashboard on a public port.
-
-That configuration lives in Dokploy, not in this repository, which is the one part of the
-deployment git does not carry. `deploy/verify-not-public.sh` exists because of that: it is how the
-result gets checked rather than assumed, after every deployment.
-
-### Why the allow-list is load-bearing
-
-Traefik on `dokploy` listens on the public interface, and routes by `Host` header alone.
-Asked at its public address, `203.0.113.7`:
-
-```
-unknown Host                 -> 404
-a Host it has a router for   -> 200
-```
-
-So DNS pointing at a tailnet address hides the dashboard from anyone who does not know the name; it
-does not hide it from anyone who does. Without the allow-list, `curl --resolve
-jobs.example.com:443:203.0.113.7` reaches the app from anywhere on the internet. There is
-no login behind it to stop them (decision 32).
-
-Stronger, if the shared configuration is worth touching further: give Traefik an entry point bound
-to the tailnet address only (`address: 100.x.y.z:443`) and put this router on that entry point
-instead of `websecure`. Then the public interface has no route to the app at all, rather than a
-route that is filtered.
+What it replaced is worth knowing on a server whose other applications Dokploy routes through
+Traefik. Traefik there listens on the public interface and routes by `Host` header alone, so a
+private application behind it is a route that has to be filtered, by an allow-list kept in a
+configuration Dokploy regenerates on every deployment. This service is not routed by Traefik at
+all: asked at the server's public address under the service's name, Traefik answers 404, because no
+router knows it. If the service was ever served under a public name before, and a wildcard DNS
+record still leads that name to the server, `JOBS_RETIRED_HOSTNAME` has `verify-not-public.sh`
+check that nothing answers for it there either; a stale router would.
 
 Then verify, from a machine that is **not** on the tailnet:
 
 ```sh
-JOBS_HOSTNAME=jobs.example.com SERVER_PUBLIC_IP=203.0.113.7 deploy/verify-not-public.sh
+JOBS_HOSTNAME=jobs.example.ts.net SERVER_PUBLIC_IP=203.0.113.7 deploy/verify-not-public.sh
 ```
+
+It first insists that the name does **not** resolve: a tailnet address means the machine is on the
+tailnet and the test would prove nothing; a public one means something publishes the name, Funnel
+being the likely cause. Then it tries the doors anyway: the public address on 443 and 80 with the
+name presented, and port 8000 in case it was ever published, over IPv6 as well when
+`SERVER_PUBLIC_IPV6` is set.
+
+| Variable | Meaning |
+|---|---|
+| `JOBS_HOSTNAME` | The service's MagicDNS name, `jobs.example.ts.net`. |
+| `SERVER_PUBLIC_IP` | The server's public address, `203.0.113.7`. |
+| `SERVER_PUBLIC_IPV6` | Optional, the server's public IPv6 address, if it has one. |
+| `JOBS_RETIRED_HOSTNAME` | Optional, a public name the dashboard used to answer on. Asked for as public DNS resolves it, which a wildcard record may still do to the server; nothing may answer there. CI's job does not pass it, so it is checked by hand. |
 
 CI's `not-public` job runs the same script from a GitHub runner after every deployment. After a
-change to the routing, the certificate or the tailnet policy, either run the script by hand from
-off the tailnet, or start the CI workflow by hand, which redeploys and then verifies.
-
-## When every public site on the server stops answering
-
-Worth two minutes rather than an hour, if the server's firewall is managed with `ufw-docker`.
-Saving Traefik's environment in Dokploy recreates the `dokploy-traefik` container. Firewall rules
-written as `ufw-docker allow dokploy-traefik 80` are pinned to the container's internal address,
-the recreated container gets a new one, and public traffic to 80 and 443 is then dropped:
-connections time out, while the same sites still answer over the tailnet address, because traffic
-arriving on `tailscale0` is accepted wholesale. A reboot can move the address just as well.
-
-`ufw-docker` does not repair it by itself. It writes rules for the networks `docker inspect` lists,
-but a container attached only to `dokploy-network` has its published ports forwarded through
-`docker_gwbridge`, which is not among them.
-
-The fix is at the source, on the server and outside this repository: name no container in the
-firewall rules. Write, once:
-
-```
-ufw route allow proto tcp from any to any port 80
-ufw route allow proto tcp from any to any port 443
-```
-
-Only one container can publish a given host port, so "allow forwarded traffic to port 80" is
-"allow whatever serves port 80" — Traefik by construction rather than by configuration. The rule
-carries no address, so no recreation or reboot can invalidate it.
+change to the compose file, `serve.json` or the tailnet's settings, either run the script by hand
+from off the tailnet, or start the CI workflow by hand, which redeploys and then verifies.
 
 ## Deploying
 
@@ -263,7 +246,7 @@ up as such):
 | `DOKPLOY_API_KEY` | the key generated above |
 | `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET` | a Tailscale OAuth client, scope `auth_keys`, tag `tag:ci` |
 | `DOKPLOY_URL` | `http://dokploy.example.ts.net:3000` |
-| `JOBS_HOSTNAME` | `jobs.example.com` |
+| `JOBS_HOSTNAME` | `jobs.example.ts.net` |
 | `SERVER_PUBLIC_IP` | `203.0.113.7` |
 | `SERVER_PUBLIC_IPV6` | only if the server has one |
 
@@ -331,7 +314,8 @@ So in a private copy a busy month of daily pushes sits near a tenth of the allow
   it; on a Dokploy of another version, watch the first run.
 - `not-public` judges by status: no connection, 403 and 404 are a shut door, anything else is
   exposure, including the 502 of an open route onto an application that is still starting. What it
-  cannot see is a route that is open while Traefik itself is down.
+  cannot see is a door that is shut only for now: a router added while Traefik itself is down, or
+  Funnel switched on between two deployments.
 
 ## Restoring the store
 

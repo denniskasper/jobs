@@ -248,6 +248,9 @@
     {% if application.sent %}
     <p class="note">This Application was sent, so it cannot be deleted: what went out to whom
       stays. Set it to <code>closed</code> instead.</p>
+    {% elif standing.under_way %}
+    <p class="note">An answer about its Letter is under way, so this Application cannot be deleted
+      yet: try again once the answer is in.</p>
     {% else %}
     <p class="note">For an Application that should never have existed: it goes, with all it holds,
       and the data repository's history is the only place it can be found again.</p>

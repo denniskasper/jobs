@@ -10,9 +10,12 @@ from typing import Any
 
 from starlette.testclient import TestClient
 
-from conftest import RememberedCommits
+from conftest import RememberedCommits, ScriptedModel, WriteApplication, fetch_next_answer
 from test_bringing_in import FOLDER, LINK, TEXT, create
 from test_documents import RESUME, add_document
+from test_letter_revision import ANSWER, RECORD, ask_for_a_first_version, difference_on, write_brief
+from test_letter_revision import FOLDER as LETTER_FOLDER
+from test_letter_revision import PAGE as LETTER_PAGE
 
 PAGE = f"/applications/{FOLDER}"
 OTHER = "nordwind-robotics/2026-09-18-test-engineer"
@@ -258,3 +261,77 @@ def test_a_closed_application_never_sent_can_be_deleted(
 
     assert deleted.status_code == 303
     assert not (data_dir / "applications" / FOLDER).exists()
+
+
+def ask_about_the_letter(
+    dashboard: TestClient, data_dir: Path, write_application: WriteApplication
+) -> None:
+    write_application(LETTER_FOLDER, RECORD)
+    write_brief(data_dir)
+    ask_for_a_first_version(dashboard)
+
+
+def test_while_an_answer_is_under_way_the_danger_zone_says_so_and_offers_no_deletion(
+    dashboard: TestClient, data_dir: Path, write_application: WriteApplication
+) -> None:
+    ask_about_the_letter(dashboard, data_dir, write_application)
+
+    zone = danger_zone(dashboard.get(LETTER_PAGE).text)
+
+    assert zone is not None
+    assert "Delete this Application" not in zone
+    assert "An answer about its Letter is under way" in zone
+
+
+def test_deleting_while_an_answer_is_under_way_is_refused_and_changes_nothing(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    committer: RememberedCommits,
+) -> None:
+    write_application(LETTER_FOLDER, RECORD)
+    action = re.findall(
+        r'<form method="post" action="([^"]+)"', confirmation(dashboard, LETTER_FOLDER)
+    )[0]
+    write_brief(data_dir)
+    ask_for_a_first_version(dashboard)
+    commits = len(committer.commits)
+
+    refused = dashboard.post(html.unescape(action))
+    asked = dashboard.get(f"{LETTER_PAGE}/delete")
+
+    for answer in (refused, asked):
+        assert answer.status_code == 422
+        assert "An answer about its Letter is under way" in answer.text
+        assert '<button type="submit" class="add danger-go">' not in answer.text
+    assert (data_dir / "applications" / LETTER_FOLDER / "conversation.yaml").is_file()
+    assert len(committer.commits) == commits
+
+
+def test_once_the_answer_is_in_the_application_can_be_deleted(
+    dashboard: TestClient, data_dir: Path, write_application: WriteApplication
+) -> None:
+    ask_about_the_letter(dashboard, data_dir, write_application)
+    fetch_next_answer(dashboard)
+
+    deleted = confirm(dashboard, LETTER_FOLDER)
+
+    assert deleted.status_code == 303
+    assert not (data_dir / "applications" / LETTER_FOLDER).exists()
+
+
+def test_a_revision_waiting_for_a_decision_goes_with_the_application(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+) -> None:
+    model.answers.append(ANSWER)
+    ask_about_the_letter(dashboard, data_dir, write_application)
+    fetch_next_answer(dashboard)
+    assert difference_on(dashboard.get(LETTER_PAGE).text) is not None
+
+    deleted = confirm(dashboard, LETTER_FOLDER)
+
+    assert deleted.status_code == 303
+    assert not (data_dir / "applications" / LETTER_FOLDER).exists()

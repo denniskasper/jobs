@@ -31,6 +31,7 @@ from starlette.templating import Jinja2Templates
 from jobs import __version__, guess
 from jobs.applications import (
     AlreadyBroughtIn,
+    Application,
     Status,
     change_status,
     create_application,
@@ -48,7 +49,7 @@ from jobs.clock import Clock
 from jobs.commits import Committer
 from jobs.documents import add_shared, list_shared
 from jobs.fetching import Network
-from jobs.letters import Letters
+from jobs.letters import ANSWER_UNDER_WAY, Letters
 from jobs.models import Model
 from jobs.polling import Condition, Poller, Schedule, health_of, last_poll
 from jobs.postings import list_postings
@@ -456,8 +457,11 @@ def create_app(
             application = read_application(data_dir, folder)
         except Refused as not_opened:
             return render(request, not_opened)
+        standing = letters.look(folder)
         try:
             refuse_if_sent(application)
+            if standing.under_way:
+                raise Refused(ANSWER_UNDER_WAY)
         except Refused as refusal:
             return render_application(request, refusal)
         try:
@@ -465,7 +469,6 @@ def create_app(
         except Malformed:
             # It is there, if unreadable, and goes with the rest.
             has_posting = True
-        standing = letters.look(folder)
         goes = [
             name
             for name, held in (
@@ -479,10 +482,15 @@ def create_app(
         ]
         return page(request, "delete_application.html", {"application": application, "goes": goes})
 
+    def delete_held_back(folder: str) -> Application:
+        # Nothing is asked about its Letter while it goes, and nothing goes while an answer comes.
+        with letters.held_back(folder):
+            return delete_application(data_dir, committer, folder)
+
     async def delete(request: Request) -> Response:
         folder = request.path_params["folder"]
         try:
-            deleted = await run_in_threadpool(delete_application, data_dir, committer, folder)
+            deleted = await run_in_threadpool(delete_held_back, folder)
         except NotFound:
             # A second tab, or a second press: what was asked for is done already.
             return render(request, NotFound(f"{folder} is gone already: nothing was deleted."))

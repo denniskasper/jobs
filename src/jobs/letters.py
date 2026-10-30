@@ -15,6 +15,8 @@ import difflib
 import re
 import sys
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from enum import StrEnum
 from pathlib import Path
@@ -51,6 +53,14 @@ FIRST_VERSION = "A first version was asked for."
 # What a hand edit puts into the Conversation. That it happened, and not what it changed: the
 # Letter as it stands says what it is now.
 EDITED_BY_HAND = "The Letter was edited by hand."
+
+# Why an Application cannot be deleted for now.
+ANSWER_UNDER_WAY = (
+    "An answer about its Letter is under way, so it cannot be deleted yet: try again once the "
+    "answer is in."
+)
+# Why nothing is asked about the Letter of an Application that is being deleted.
+BEING_DELETED = "Nothing was asked: this Application is being deleted."
 
 
 class Author(StrEnum):
@@ -244,6 +254,8 @@ class Letters:
         self._asked: list[str] = []
         # Why the last answer asked for in a folder never came. Shown and not stored.
         self._reasons: dict[str, str] = {}
+        # The folders being deleted, about whose Letters nothing is asked meanwhile.
+        self._held_back: set[str] = set()
         # Around what is asked and around every read and write of a Letter and its Conversation:
         # requests are served from threads, and an answer arrives from another one.
         self._keeping = threading.Lock()
@@ -282,6 +294,7 @@ class Letters:
         directory = directory_of(self.data_dir, folder)
         # Checked and taken on in one go, so that the button pressed twice asks once.
         with self._keeping:
+            self._refuse_if_held_back(folder)
             _refuse_unless_todo(self.data_dir, folder, "Nothing was asked")
             try:
                 letter, conversation = _read_letter(directory), _read_conversation(directory)
@@ -332,6 +345,7 @@ class Letters:
         # Checked and taken on in one go, so that a message sent twice is not asked about twice
         # at once.
         with self._keeping:
+            self._refuse_if_held_back(folder)
             try:
                 conversation = _read_conversation(directory)
             except Malformed as malformed:
@@ -364,6 +378,7 @@ class Letters:
         directory = directory_of(self.data_dir, folder)
         # Checked and taken on in one go, so that the button pressed twice asks once.
         with self._keeping:
+            self._refuse_if_held_back(folder)
             _refuse_unless_todo(self.data_dir, folder, "Nothing was asked")
             try:
                 conversation = _read_conversation(directory)
@@ -380,6 +395,25 @@ class Letters:
             self._asked.append(folder)
         if self.runner:
             self.runner(self.answer_next)
+
+    @contextmanager
+    def held_back(self, folder: str) -> Iterator[None]:
+        """Keep anything from being asked about the Letter of the Application in `folder` while
+        it is being deleted. Raises Refused when an answer about it is under way already: it
+        would arrive for a folder that is gone. A Revision that only waits does not count."""
+        with self._keeping:
+            if folder in self._asked:
+                raise Refused(ANSWER_UNDER_WAY)
+            self._held_back.add(folder)
+        try:
+            yield
+        finally:
+            with self._keeping:
+                self._held_back.discard(folder)
+
+    def _refuse_if_held_back(self, folder: str) -> None:
+        if folder in self._held_back:
+            raise Refused(BEING_DELETED)
 
     def answer_next(self) -> None:
         """Fetch the answer that has been asked for longest and keep it in its Conversation.

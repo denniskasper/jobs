@@ -245,6 +245,19 @@
 {% endblock %}
 
 {% block after %}
+<script id="keeps-its-place">
+  // A form sent from this page comes back to this page, loaded anew: put it where it was
+  // scrolled to, rather than at its top. Kept for this tab only, and only for the next load.
+  (function () {
+    var key = 'scrolled:' + location.pathname;
+    var kept = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+    if (kept !== null) scrollTo(0, Number(kept));
+    document.addEventListener('submit', function (event) {
+      if (!event.defaultPrevented) sessionStorage.setItem(key, String(scrollY));
+    });
+  })();
+</script>
 {% if standing.messages %}
 <script id="marks-new">
   // The answers that came since this page was last seen are marked new, for as long as this

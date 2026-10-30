@@ -526,3 +526,33 @@ def test_answers_that_came_since_the_last_visit_are_marked_new_and_the_tab_says_
         assert page.title() == title
         assert "favicon-new.svg" not in (page.get_attribute("link[rel=icon]", "href") or "")
         assert "Warmer now." in (page.locator(NEW).text_content() or "")
+
+
+def test_sending_leaves_the_page_where_it_was_scrolled_to(
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+    new_app: Starlette,
+) -> None:
+    if reason := no_chromium():
+        pytest.skip(reason)
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+    dashboard = TestClient(new_app)
+    ask_for_a_first_version(dashboard)
+    model.answers.append(ANSWER)
+    fetch_next_answer(dashboard)
+    with in_the_browser(new_app) as (page, origin):
+        # Narrow and short, so that the message box is far down the page.
+        page.set_viewport_size({"width": 400, "height": 500})
+        page.goto(f"{origin}{PAGE}")
+        page.fill("#message", "Shorter, please.")
+        before = page.evaluate("window.scrollY")
+        assert before > 0
+
+        with page.expect_navigation():
+            page.click("#conversation button:has-text('Send')")
+        page.wait_for_load_state()
+
+        assert "An answer is under way" in (page.text_content("#conversation") or "")
+        assert page.evaluate("window.scrollY") == pytest.approx(before, abs=2)

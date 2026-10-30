@@ -341,7 +341,7 @@ def test_a_save_that_could_not_be_committed_says_so_and_keeps_what_was_written(
     assert read_record(data_dir)["notes"] == "Mention the towing tank."
 
 
-def test_the_page_has_its_three_parts(
+def test_the_page_has_its_four_parts(
     dashboard: TestClient, write_application: WriteApplication
 ) -> None:
     write_application(FOLDER, RECORD)
@@ -349,7 +349,7 @@ def test_the_page_has_its_three_parts(
     page = dashboard.get(f"/applications/{FOLDER}").text
 
     titles = re.findall(r'<h2 class="application-title"[^>]*>([^<]+)</h2>', page)
-    assert titles == ["Posting", "Letter", "Conversation"]
+    assert titles == ["Posting", "Documents", "Letter", "Conversation"]
 
 
 def test_what_was_written_down_stays_line_for_line_in_the_file_through_later_writes(

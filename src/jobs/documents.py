@@ -2,8 +2,9 @@
 (ADR 0002).
 
 `documents/store/` holds the bytes, each file named by the SHA-256 of its content.
-`documents/shared.yaml` says which of them a new Application gets, and under which filename. The
-links are relative symlinks, which git stores as they are, so they resolve in every clone.
+`documents/shared.yaml` says which of them a new Application gets, and under which filename; one
+can be added to an Application later as well. The links are relative symlinks, which git stores as
+they are, so they resolve in every clone.
 
 Only the scaffolding half of ADR 0002 lives here. Nothing is frozen and no Manifest is written;
 both belong to the Send Gate.
@@ -29,6 +30,10 @@ _NOT_DOCUMENTS = ("application.yaml", "posting.yaml", "letter.md", "conversation
 
 _EXTENSION = r"\.[a-z0-9]{1,10}"
 _STORED = re.compile(rf"[0-9a-f]{{64}}({_EXTENSION})?")
+
+# What a Document can be, told by how its bytes begin, and the extensions its name may have.
+_KINDS = {"PDF": b"%PDF-", "PNG": b"\x89PNG\r\n\x1a\n", "JPG": b"\xff\xd8\xff"}
+_EXTENSIONS = {"PDF": (".pdf",), "PNG": (".png",), "JPG": (".jpg", ".jpeg")}
 
 # What most filesystems allow a filename, in bytes.
 _LONGEST_NAME = 255
@@ -63,7 +68,7 @@ def list_shared(data_dir: Path) -> list[SharedDocument]:
         raise Malformed(f"documents in {SHARED_NAME} is not a mapping of filenames to stored files")
     shared = []
     for name, stored in entries.items():
-        if not isinstance(name, str) or _name_problem(name):
+        if not isinstance(name, str) or name_problem(name):
             raise Malformed(f"{name!r} in {SHARED_NAME} is not a plain filename")
         if not isinstance(stored, str) or not _STORED.fullmatch(stored):
             raise Malformed(f"{name} in {SHARED_NAME} does not name a file in the store")
@@ -84,11 +89,7 @@ def add_shared(data_dir: Path, committer: Committer, *, name: str, content: byte
     the new bytes; Applications linked to the old ones keep them.
     """
     name = name.strip()
-    problem = _name_problem(name)
-    if problem:
-        raise Refused(f"The filename {problem}.")
-    if not content:
-        raise Refused("The file is empty, or none was chosen.")
+    refuse_unless_document(name, content)
     with _one_at_a_time:
         _add(data_dir, committer, name, content)
 
@@ -120,8 +121,24 @@ def _add(data_dir: Path, committer: Committer, name: str, content: bytes) -> Non
         ) from failed
 
 
+def refuse_unless_document(name: str, content: bytes) -> None:
+    """Refuse a file that cannot be a Document called `name`: one without a plain filename, an
+    empty one, and one that is not a PDF, JPG or PNG, which a merged PDF could not take."""
+    problem = name_problem(name)
+    if problem:
+        raise Refused(f"The filename {problem}.")
+    if not content:
+        raise Refused("The file is empty, or none was chosen.")
+    kind = next((kind for kind, start in _KINDS.items() if content.startswith(start)), None)
+    if kind is None:
+        raise Refused(f"Only a PDF, JPG or PNG can be a Document, and {name} is none of them.")
+    if PurePosixPath(name).suffix.lower() not in _EXTENSIONS[kind]:
+        raise Refused(f"{name} is a {kind}, so its name has to end in {_EXTENSIONS[kind][0]}.")
+
+
 def link(data_dir: Path, shared: Sequence[SharedDocument], *, into: Path) -> list[Path]:
-    """Link the `shared` Documents into the Application folder `into`, and return the links."""
+    """Link the `shared` Documents into the Application folder `into`, to the bytes each names
+    now, and return the links."""
     links = []
     for document in shared:
         link = into / document.name
@@ -158,7 +175,7 @@ def _store(data_dir: Path) -> Path:
     return _root(data_dir) / "store"
 
 
-def _name_problem(name: str) -> str | None:
+def name_problem(name: str) -> str | None:
     if not name:
         return "is missing"
     if PurePosixPath(name).name != name or "\\" in name or name in (".", ".."):

@@ -19,11 +19,13 @@
 
   <nav class="jump" aria-label="On this page">
     <a href="#posting">Posting</a>
+    <a href="#documents">Documents</a>
     <a href="#letter">Letter</a>
     <a href="#conversation">Conversation</a>
   </nav>
 
   <div class="application">
+    <div class="application-column">
     <section class="application-part" id="posting" aria-labelledby="posting-title">
       <h2 class="application-title" id="posting-title">Posting</h2>
       {% if brought_in_again %}
@@ -82,6 +84,77 @@
         <button type="submit" class="add">Save</button>
       </form>
     </section>
+
+    <section class="application-part" id="documents" aria-labelledby="documents-title">
+      <h2 class="application-title" id="documents-title">Documents</h2>
+      {% if refusal and entered.documents %}
+      <div class="note" role="alert">
+        <p><strong>{{ entered.documents }}</strong> {{ refusal }}</p>
+      </div>
+      {% endif %}
+      {% if documents_problem %}
+      <p class="note" role="alert"><strong>Its Documents could not be read.</strong>
+        {{ documents_problem }}. Fix <span class="mono">application.yaml</span> by hand and reload.</p>
+      {% else %}
+      {% if not held %}
+      <p class="note">This Application holds no Documents.</p>
+      {% else %}
+      <ol class="held">
+        {% for document in held %}
+        <li class="held-document">
+          <span class="document-name">{{ document.name }}</span>
+          <span class="held-about">{{ 'Shared' if document.shared else 'Its own' }}
+            {%- if document.size is none %}, <strong>missing from its folder</strong>{% else %} · {{ "%.1f"|format(document.size / 1024) }} KB{% endif %}</span>
+          {% if not application.sent %}
+          <div class="held-controls">
+            {% set first, last = loop.first, loop.last %}
+            {% for direction, label, at_the_end in (('up', 'Up', first), ('down', 'Down', last)) if not at_the_end %}
+            <form method="post" action="{{ url_for('move_held_document', folder=application.folder) }}">
+              <input type="hidden" name="name" value="{{ document.name }}">
+              <input type="hidden" name="direction" value="{{ direction }}">
+              <button type="submit" class="add quiet" aria-label="Move {{ document.name }} {{ direction }}">{{ label }}</button>
+            </form>
+            {% endfor %}
+            <form method="post" action="{{ url_for('remove_held_document', folder=application.folder) }}">
+              <input type="hidden" name="name" value="{{ document.name }}">
+              <button type="submit" class="add quiet" aria-label="Remove {{ document.name }}">Remove</button>
+            </form>
+          </div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+      {% if application.sent %}
+      <p class="note">This Application was sent, so its Documents stay as they are.</p>
+      {% else %}
+      {% if to_add %}
+      <form method="post" action="{{ url_for('add_held_document', folder=application.folder) }}" class="written">
+        <div class="form-group">
+          <label class="form-label" for="shared-name">A shared Document</label>
+          <select class="form-input" id="shared-name" name="name">
+            {% for document in to_add %}
+            <option value="{{ document.name }}">{{ document.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="add">Add</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('upload_held_document', folder=application.folder) }}"
+            enctype="multipart/form-data" class="written">
+        <div class="form-group">
+          <label class="form-label" for="own-file">A file for this Application alone</label>
+          <input class="form-input" id="own-file" name="file" type="file" required
+                 accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+          <p class="note">A PDF, JPG or PNG, kept in this Application's folder under its own name.</p>
+        </div>
+        <button type="submit" class="add">Upload</button>
+      </form>
+      {% endif %}
+      {% endif %}
+    </section>
+    </div>
 
     <section class="application-part" id="letter" aria-labelledby="letter-title">
       <h2 class="application-title" id="letter-title">Letter</h2>

@@ -249,8 +249,8 @@ def scaffold(
     data_dir: Path, *, company: str, role: str, on: date, posting: str | None = None
 ) -> Scaffolded:
     """Scaffold the folder for a new Application, write its record, starting at `todo`, and link
-    in the shared Documents. `posting` is the text of the Posting it holds, stored beside the
-    record. Raises Refused. Nothing is committed here."""
+    in every shared Document, which it then holds. `posting` is the text of the Posting it holds,
+    stored beside the record. Raises Refused. Nothing is committed here."""
     application = Application(
         folder=f"{_folder_part(company, 'company')}/{on.isoformat()}-{_folder_part(role, 'role')}",
         company=company.strip(),
@@ -258,13 +258,6 @@ def scaffold(
         date=on,
         status=Status.TODO,
     )
-    record = {
-        "company": application.company,
-        "role": application.role,
-        "date": application.date,
-        "status": application.status.value,
-        "history": [_history_entry(application.status, on)],
-    }
     directory = data_dir / "applications" / application.folder
     try:
         shared = documents.list_shared(data_dir)
@@ -273,6 +266,15 @@ def scaffold(
             f"{application.folder} was not created, because the shared Documents cannot be "
             f"linked into it: {malformed}. Fix that by hand first."
         ) from None
+    record = {
+        "company": application.company,
+        "role": application.role,
+        "date": application.date,
+        "status": application.status.value,
+        "history": [_history_entry(application.status, on)],
+        # Every shared Document, in the order the Documents tab lists them.
+        "documents": [{SHARED: document.name} for document in shared],
+    }
     try:
         directory.parent.mkdir(parents=True, exist_ok=True)
         directory.mkdir()
@@ -390,6 +392,177 @@ def delete_application(
             "its removal by hand in the data repository."
         ) from failed
     return application
+
+
+# How the record names a Document it holds: shared, by the name it has on the Documents tab, or
+# its own, by the name of the file in its folder.
+SHARED = "shared"
+OWN = "own"
+
+
+@dataclass(frozen=True)
+class Held:
+    """One Document an Application holds, under the filename it has in the Application's
+    folder."""
+
+    name: str
+    shared: bool
+    size: int | None
+    """In bytes, None when its folder holds no such file."""
+
+
+def documents_of(data_dir: Path, folder: str) -> list[Held]:
+    """The Documents the Application in `folder` holds, in order. Raises NotFound and
+    Malformed."""
+    directory = directory_of(data_dir, folder)
+    held = []
+    for kind, name in _held(data_dir, records.load(directory / RECORD_NAME), directory):
+        path = directory / name
+        size = path.stat().st_size if path.is_file() else None
+        held.append(Held(name=name, shared=kind == SHARED, size=size))
+    return held
+
+
+def hold_shared(data_dir: Path, committer: Committer, folder: str, name: str) -> None:
+    """Add the shared Document called `name` to the end of what the Application in `folder`
+    holds, linked to the bytes it names now, and commit it. Raises NotFound, Refused and
+    NotCommitted."""
+
+    def change(held: list[tuple[str, str]], directory: Path) -> list[Path]:
+        try:
+            shared = {document.name: document for document in documents.list_shared(data_dir)}
+        except Malformed as malformed:
+            raise Refused(f"The shared Documents cannot be read: {malformed}.") from None
+        if name not in shared:
+            raise Refused(f"There is no shared Document called {name}.")
+        _refuse_taken(held, directory, name)
+        held.append((SHARED, name))
+        return documents.link(data_dir, [shared[name]], into=directory)
+
+    _change_documents(data_dir, committer, folder, f"Add shared Document {name} to", change)
+
+
+def hold_own(data_dir: Path, committer: Committer, folder: str, name: str, content: bytes) -> None:
+    """Store `content` in the folder of the Application in `folder` as a Document of its own
+    called `name`, last in its order, and commit it. Raises NotFound, Refused and
+    NotCommitted."""
+    name = name.strip()
+    documents.refuse_unless_document(name, content)
+
+    def change(held: list[tuple[str, str]], directory: Path) -> list[Path]:
+        _refuse_taken(held, directory, name)
+        (directory / name).write_bytes(content)
+        held.append((OWN, name))
+        return [directory / name]
+
+    _change_documents(data_dir, committer, folder, f"Add Document {name} to", change)
+
+
+def let_go(data_dir: Path, committer: Committer, folder: str, name: str) -> None:
+    """Remove the Document called `name` from the Application in `folder`, and commit it. A
+    shared one goes as a link only: the Documents tab and every other Application keep it. Raises
+    NotFound, Refused and NotCommitted."""
+
+    def change(held: list[tuple[str, str]], directory: Path) -> list[Path]:
+        held.pop(_position(held, name))
+        (directory / name).unlink(missing_ok=True)
+        return [directory / name]
+
+    _change_documents(data_dir, committer, folder, f"Remove Document {name} from", change)
+
+
+def move_document(
+    data_dir: Path, committer: Committer, folder: str, name: str, *, up: bool
+) -> None:
+    """Move the Document called `name` one place up or down in the order of the Application in
+    `folder`, and commit it. The first one up and the last one down stay where they are. Raises
+    NotFound, Refused and NotCommitted."""
+
+    def change(held: list[tuple[str, str]], directory: Path) -> list[Path]:
+        at = _position(held, name)
+        to = at - 1 if up else at + 1
+        if 0 <= to < len(held):
+            held[at], held[to] = held[to], held[at]
+        return []
+
+    direction = "up" if up else "down"
+    _change_documents(data_dir, committer, folder, f"Move Document {name} {direction} in", change)
+
+
+def _change_documents(
+    data_dir: Path,
+    committer: Committer,
+    folder: str,
+    doing: str,
+    change: Callable[[list[tuple[str, str]], Path], list[Path]],
+) -> None:
+    """Hand what the Application in `folder` holds to `change`, which changes it in place and
+    gives back the files it wrote or removed, and commit those with the record. Nothing is
+    written when the order comes back as it was and no file was touched."""
+    directory = directory_of(data_dir, folder)
+    path = directory / RECORD_NAME
+    try:
+        record = records.load(path)
+        refuse_changes_if_sent(_parse(record, folder))
+        before = _held(data_dir, record, directory)
+    except Malformed as malformed:
+        raise Refused(f"{folder} was left as it is, fix it by hand first: {malformed}.") from None
+    held = list(before)
+    try:
+        touched = change(held, directory)
+    except OSError as error:
+        raise Refused(f"{folder} could not be changed: {error.strerror}.") from error
+    if held == before and not touched:
+        return
+    record["documents"] = [{kind: name} for kind, name in held]
+    records.write(path, _dump(record))
+    _commit(committer, f"{doing} {folder}", folder, [path, *touched])
+
+
+def refuse_changes_if_sent(application: Application) -> None:
+    """Refuse a change to the Documents of an Application that was ever sent: what it sent is
+    what it holds."""
+    if application.sent:
+        raise Refused(
+            f"{application.role} at {application.company} was sent, so its Documents stay as "
+            "they are."
+        )
+
+
+def _held(data_dir: Path, record: dict[Any, Any], directory: Path) -> list[tuple[str, str]]:
+    """What the record says the Application holds, as kind and name, in order. A record that
+    says nothing holds the shared Documents linked into its folder, in the Documents tab's
+    order, which is what an Application held before its record named them. Raises Malformed."""
+    if "documents" not in record:
+        return [(SHARED, link.name) for link in documents.links_in(data_dir, directory)]
+    entries = record["documents"]
+    if not isinstance(entries, list):
+        raise Malformed("documents is not a list")
+    held: list[tuple[str, str]] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or len(entry) != 1 or next(iter(entry)) not in (SHARED, OWN):
+            raise Malformed(f"each of documents is either {SHARED}: or {OWN}: and a filename")
+        ((kind, name),) = entry.items()
+        if not isinstance(name, str) or documents.name_problem(name):
+            raise Malformed(f"{name!r} in documents is not a plain filename")
+        if any(name == other for _, other in held):
+            raise Malformed(f"{name} is in documents more than once")
+        held.append((kind, name))
+    return held
+
+
+def _refuse_taken(held: Sequence[tuple[str, str]], directory: Path, name: str) -> None:
+    if any(name == other for _, other in held):
+        raise Refused(f"This Application holds a Document called {name} already.")
+    if (directory / name).exists() or (directory / name).is_symlink():
+        raise Refused(f"There is a file called {name} in this Application's folder already.")
+
+
+def _position(held: Sequence[tuple[str, str]], name: str) -> int:
+    for at, (_, other) in enumerate(held):
+        if other == name:
+            return at
+    raise Refused(f"This Application holds no Document called {name}.")
 
 
 def refuse_if_sent(application: Application) -> None:

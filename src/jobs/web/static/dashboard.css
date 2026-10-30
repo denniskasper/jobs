@@ -692,13 +692,15 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 
 /* ───────── one Application: its Posting, its Letter, the Conversation about it ───────── */
 
-/* One under the other, so the way from one to the next stays in view while reading. */
+/* One under the other, so the way from one to the next stays in view while reading. On the
+   narrowest phones the last link is reached by moving the links, never the page. */
 .jump {
   position: sticky;
   top: 0;
   z-index: 5;
   display: flex;
-  gap: 22px;
+  gap: 18px;
+  overflow-x: auto;
   margin: 18px calc(-1 * var(--gutter)) 0;
   padding: 0 var(--gutter);
   background: var(--ground);
@@ -707,6 +709,7 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 
 .jump a {
   display: flex;
+  flex: none;
   align-items: center;
   min-height: var(--hit);
   font-family: var(--label);
@@ -720,6 +723,16 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 /* Under the links that lead here, not behind them. */
 .application-part { scroll-margin-top: calc(var(--hit) + 16px); }
 .application-title { margin: 0 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--hair); font-family: var(--label); font-size: 22px; font-weight: 600; line-height: 1.2; }
+/* The Posting and the Documents share the first column. */
+.application-column { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; align-content: start; }
+
+/* What an Application sends, in order, each with what can be done to it. */
+.held { margin: 0; padding-left: 22px; }
+.held-document { padding: 8px 0; border-bottom: 1px solid var(--hair); }
+.document-name { font-weight: 500; overflow-wrap: anywhere; }
+.held-about { display: block; font-size: 14px; color: var(--ink-3); }
+.held-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
 .posting-text { margin-top: 14px; font-size: 15px; line-height: 1.5; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .written { margin-top: 28px; }
 .written textarea { resize: vertical; line-height: 1.5; }

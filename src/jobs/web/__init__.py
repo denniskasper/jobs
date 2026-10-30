@@ -35,10 +35,15 @@ from jobs.applications import (
     Status,
     change_status,
     create_application,
+    documents_of,
     give_text,
+    hold_own,
+    hold_shared,
     holding,
     lacks_text,
+    let_go,
     list_applications,
+    move_document,
     posting_of,
     read_application,
     refuse_if_sent,
@@ -400,6 +405,7 @@ def create_app(
         folder: str | None = None,
         again: bool = False,
         text: str = "",
+        not_done: str = "",
     ) -> Response:
         # Another address than the Application's own shows it when a link brought in again led
         # there with a text.
@@ -414,6 +420,16 @@ def create_app(
         except Malformed as malformed:
             posting, posting_problem = None, str(malformed)
         standing = letters.look(folder)
+        try:
+            held, documents_problem = documents_of(data_dir, folder), None
+        except Malformed as malformed:
+            held, documents_problem = [], str(malformed)
+        try:
+            holding_names = {each.name for each in held}
+            shared = [each for each in list_shared(data_dir) if each.name not in holding_names]
+        except Malformed:
+            # The Documents tab says why; here there is only nothing to add.
+            shared = []
         return page(
             request,
             "application.html",
@@ -421,6 +437,9 @@ def create_app(
                 "application": application,
                 "posting": posting,
                 "posting_problem": posting_problem,
+                "held": held,
+                "documents_problem": documents_problem,
+                "to_add": shared,
                 "standing": standing,
                 "prints": printer is not None,
                 # The difference unless the preview was switched to, which only a Revision has.
@@ -441,7 +460,8 @@ def create_app(
                 # and asking for that again would not be asking for this page.
                 "keeps_up": at_own_address and refusal is None and standing.under_way,
                 "status_badges": STATUS_BADGES,
-                "entered": {},
+                # A refusal about its Documents is said beside them, under what was not done.
+                "entered": {"documents": not_done} if not_done else {},
             },
             refusal,
         )
@@ -524,6 +544,46 @@ def create_app(
         except (Refused, NotCommitted) as refusal:
             return render_application(request, refusal, text=text)
         return RedirectResponse(request.url_for("application", folder=folder), status_code=303)
+
+    async def change_documents(
+        request: Request, not_done: str, change: Callable[..., None], *arguments: Any, **named: Any
+    ) -> Response:
+        folder = request.path_params["folder"]
+        try:
+            await run_in_threadpool(change, data_dir, committer, folder, *arguments, **named)
+        except Refused as refusal:
+            return render_application(request, refusal, not_done=not_done)
+        except NotCommitted as not_committed:
+            return render_application(request, not_committed)
+        return RedirectResponse(
+            str(request.url_for("application", folder=folder)) + "#documents", status_code=303
+        )
+
+    async def add_held_document(request: Request) -> Response:
+        form = await request.form()
+        return await change_documents(request, "Not added.", hold_shared, str(form.get("name", "")))
+
+    async def upload_held_document(request: Request) -> Response:
+        form = await request.form()
+        upload = form.get("file")
+        content, filename = b"", ""
+        if isinstance(upload, UploadFile):
+            content, filename = await upload.read(), upload.filename or ""
+        return await change_documents(request, "Not added.", hold_own, filename, content)
+
+    async def remove_held_document(request: Request) -> Response:
+        form = await request.form()
+        return await change_documents(request, "Not removed.", let_go, str(form.get("name", "")))
+
+    async def move_held_document(request: Request) -> Response:
+        form = await request.form()
+        return await change_documents(
+            request,
+            "Not moved.",
+            move_document,
+            str(form.get("name", "")),
+            up=form.get("direction") == "up",
+        )
 
     async def ask_for_letter(request: Request) -> Response:
         folder = request.path_params["folder"]
@@ -910,6 +970,20 @@ def create_app(
             Route("/applications/new", new_application),
             Route("/applications/{folder:path}/status", set_status, methods=["POST"]),
             Route("/applications/{folder:path}/posting/text", give_posting_text, methods=["POST"]),
+            Route("/applications/{folder:path}/documents/add", add_held_document, methods=["POST"]),
+            Route(
+                "/applications/{folder:path}/documents/upload",
+                upload_held_document,
+                methods=["POST"],
+            ),
+            Route(
+                "/applications/{folder:path}/documents/remove",
+                remove_held_document,
+                methods=["POST"],
+            ),
+            Route(
+                "/applications/{folder:path}/documents/move", move_held_document, methods=["POST"]
+            ),
             Route("/applications/{folder:path}/letter/ask", ask_for_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/say", say_about_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/again", send_again, methods=["POST"]),

@@ -115,11 +115,12 @@ def test_a_document_added_under_its_own_name_can_be_linked_in_under_another(
     assert not (folder / "cv-final-v7.pdf").exists()
 
 
-def test_a_new_version_reaches_new_applications_and_leaves_existing_ones_alone(
+def test_a_new_version_reaches_new_applications_and_leaves_sent_ones_alone(
     dashboard: TestClient, data_dir: Path
 ) -> None:
     add_document(dashboard, "resume.pdf", RESUME)
     nordwind = create_nordwind(dashboard, data_dir)
+    dashboard.post(f"/applications/{NORDWIND}/status", data={"status": "waiting"})
 
     add_document(dashboard, "resume.pdf", b"%PDF-1.7 a revised invented resume")
     helios = create_helios(dashboard, data_dir)

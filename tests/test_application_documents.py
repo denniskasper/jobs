@@ -340,3 +340,110 @@ def test_a_change_that_could_not_be_committed_says_so(
     assert "could not be committed" in page
     assert "the disk is full" in page
     assert listed(dashboard, NORDWIND) == ["form.jpg"]
+
+
+REVISED = b"%PDF-1.7 a revised invented resume, two pages longer" + b" " * 2048
+
+
+def test_a_new_version_reaches_every_unsent_application_holding_it(
+    dashboard: TestClient, data_dir: Path
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    create_nordwind(dashboard)
+    create_helios(dashboard)
+
+    share(dashboard, "resume.pdf", REVISED)
+
+    for folder in (NORDWIND, HELIOS):
+        assert (data_dir / "applications" / folder / "resume.pdf").read_bytes() == REVISED
+        assert "2.1 KB" in documents_section(dashboard, folder)
+
+
+def test_an_application_ever_sent_keeps_the_version_it_held(
+    dashboard: TestClient, data_dir: Path
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    create_nordwind(dashboard)
+    create_helios(dashboard)
+    dashboard.post(f"/applications/{NORDWIND}/status", data={"status": "waiting"})
+    dashboard.post(f"/applications/{NORDWIND}/status", data={"status": "todo"})
+    dashboard.post(f"/applications/{HELIOS}/status", data={"status": "interview"})
+
+    share(dashboard, "resume.pdf", REVISED)
+
+    for folder in (NORDWIND, HELIOS):
+        assert (data_dir / "applications" / folder / "resume.pdf").read_bytes() == RESUME
+
+
+def test_an_application_without_the_shared_document_is_untouched(
+    dashboard: TestClient, data_dir: Path, write_application: WriteApplication
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    create_nordwind(dashboard)
+    remove(dashboard, NORDWIND, "resume.pdf")
+    by_hand = write_application(
+        "tuhh/2026-08-01-research-engineer",
+        "company: TUHH\nrole: Research Engineer\ndate: 2026-08-01\nstatus: todo\n",
+    ).parent
+    (by_hand / "resume.pdf").write_bytes(b"%PDF-1.7 a resume of its own, kept by hand")
+
+    share(dashboard, "resume.pdf", REVISED)
+
+    assert not (data_dir / "applications" / NORDWIND / "resume.pdf").exists()
+    assert listed(dashboard, NORDWIND) == []
+    assert not (by_hand / "resume.pdf").is_symlink()
+    assert (by_hand / "resume.pdf").read_bytes() == b"%PDF-1.7 a resume of its own, kept by hand"
+
+
+def test_an_application_with_a_link_but_no_list_follows_too(
+    dashboard: TestClient, data_dir: Path, write_application: WriteApplication
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    folder = write_application(
+        "tuhh/2026-08-01-research-engineer",
+        "company: TUHH\nrole: Research Engineer\ndate: 2026-08-01\nstatus: todo\n",
+    ).parent
+    (stored_resume,) = (data_dir / "documents" / "store").iterdir()
+    (folder / "resume.pdf").symlink_to(Path("../../../documents/store") / stored_resume.name)
+
+    share(dashboard, "resume.pdf", REVISED)
+
+    assert (folder / "resume.pdf").read_bytes() == REVISED
+
+
+def test_the_new_version_is_committed_with_the_applications_it_changes(
+    dashboard: TestClient, data_dir: Path, committer: RememberedCommits
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    create_nordwind(dashboard)
+    create_helios(dashboard)
+    dashboard.post(f"/applications/{HELIOS}/status", data={"status": "waiting"})
+    made = len(committer.commits)
+
+    share(dashboard, "resume.pdf", REVISED)
+
+    (replaced,) = committer.commits[made:]
+    store = data_dir / "documents" / "store"
+    (stored_revised,) = [each for each in store.iterdir() if each.read_bytes() == REVISED]
+    assert sorted(replaced.paths) == sorted(
+        [
+            stored_revised,
+            data_dir / "documents" / "shared.yaml",
+            data_dir / "applications" / NORDWIND / "resume.pdf",
+        ]
+    )
+
+
+def test_a_new_version_that_could_not_be_committed_says_so(
+    dashboard: TestClient, data_dir: Path, committer: RememberedCommits
+) -> None:
+    share(dashboard, "resume.pdf", RESUME)
+    create_nordwind(dashboard)
+    committer.commit_failure = "the disk is full"
+
+    page = dashboard.post("/documents", files={"file": ("resume.pdf", REVISED)})
+
+    assert page.status_code == 500
+    assert "could not be committed" in page.text
+    assert "the disk is full" in page.text
+    assert (data_dir / "applications" / NORDWIND / "resume.pdf").read_bytes() == REVISED

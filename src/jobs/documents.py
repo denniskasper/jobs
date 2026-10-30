@@ -4,7 +4,8 @@
 `documents/store/` holds the bytes, each file named by the SHA-256 of its content.
 `documents/shared.yaml` says which of them a new Application gets, and under which filename; one
 can be added to an Application later as well. The links are relative symlinks, which git stores as
-they are, so they resolve in every clone.
+they are, so they resolve in every clone. An Application that was never sent follows a name to its
+newest bytes; which ones those are is for `applications` to say.
 
 Only the scaffolding half of ADR 0002 lives here. Nothing is frozen and no Manifest is written;
 both belong to the Send Gate.
@@ -14,7 +15,7 @@ import hashlib
 import os
 import re
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
@@ -82,42 +83,62 @@ def list_shared(data_dir: Path) -> list[SharedDocument]:
     return sorted(shared, key=lambda document: document.name)
 
 
-def add_shared(data_dir: Path, committer: Committer, *, name: str, content: bytes) -> None:
-    """Store `content` once, make it the shared Document called `name`, and commit both.
+def add_shared(
+    data_dir: Path,
+    committer: Committer,
+    *,
+    name: str,
+    content: bytes,
+    follow: Callable[[SharedDocument], list[Path]],
+) -> None:
+    """Store `content` once, make it the shared Document called `name`, hand that to `follow`,
+    which moves the links that are to follow it and gives them back, and commit it all at once.
 
     Bytes the store already holds are not written again. A name that is already taken moves to
-    the new bytes; Applications linked to the old ones keep them.
+    the new bytes, and so do the links `follow` moves; the others keep the old ones.
     """
     name = name.strip()
     refuse_unless_document(name, content)
     with _one_at_a_time:
-        _add(data_dir, committer, name, content)
+        _add(data_dir, committer, name, content, follow)
 
 
-def _add(data_dir: Path, committer: Committer, name: str, content: bytes) -> None:
+def _add(
+    data_dir: Path,
+    committer: Committer,
+    name: str,
+    content: bytes,
+    follow: Callable[[SharedDocument], list[Path]],
+) -> None:
     try:
         shared = {document.name: document.stored for document in list_shared(data_dir)}
     except Malformed as malformed:
         raise Refused(f"Nothing was added, fix {SHARED_NAME} by hand first: {malformed}.") from None
     stored = hashlib.sha256(content).hexdigest() + _suffix(name)
-    if shared.get(name) == stored:
-        return
     target = _store(data_dir) / stored
     record = _root(data_dir) / SHARED_NAME
-    shared[name] = stored
+    written = []
     try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not _holds(target, content):
-            _write_bytes(target, content)
-        records.write(record, records.dump({"documents": dict(sorted(shared.items()))}))
+        if shared.get(name) != stored:
+            shared[name] = stored
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if not _holds(target, content):
+                _write_bytes(target, content)
+            records.write(record, records.dump({"documents": dict(sorted(shared.items()))}))
+            written = [target, record]
+        # Even when the name already had these bytes: an Application that kept older ones
+        # before it could follow catches up.
+        written += follow(SharedDocument(name=name, stored=stored, size=len(content)))
     except OSError as error:
         raise Refused(f"{name} could not be stored: {error.strerror}.") from error
+    if not written:
+        return
     try:
-        committer.commit(f"Add shared Document {name}", [target, record])
+        committer.commit(f"Add shared Document {name}", written)
     except CommitFailed as failed:
         raise NotCommitted(
-            f"{name} was stored but could not be committed: {failed}. It is on disk and will "
-            "be linked in; commit documents/ by hand."
+            f"{name} was stored but could not be committed: {failed}. It is on disk, linked into "
+            "the Applications that follow it; commit documents/ and applications/ by hand."
         ) from failed
 
 
@@ -146,6 +167,11 @@ def link(data_dir: Path, shared: Sequence[SharedDocument], *, into: Path) -> lis
         link.symlink_to(os.path.relpath(_store(data_dir) / document.stored, start=into))
         links.append(link)
     return links
+
+
+def links_to(data_dir: Path, document: SharedDocument, link: Path) -> bool:
+    """Whether `link` is a link to the bytes `document` names now."""
+    return link.is_symlink() and link.resolve() == (_store(data_dir) / document.stored).resolve()
 
 
 def links_in(data_dir: Path, directory: Path) -> list[Path]:

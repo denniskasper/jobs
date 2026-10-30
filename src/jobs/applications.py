@@ -458,6 +458,43 @@ def hold_own(data_dir: Path, committer: Committer, folder: str, name: str, conte
     _change_documents(data_dir, committer, folder, f"Add Document {name} to", change)
 
 
+def add_shared(data_dir: Path, committer: Committer, *, name: str, content: bytes) -> None:
+    """Make `content` the shared Document called `name`, and move every Application that was
+    never sent and holds it to the new bytes, in the same commit. One that was sent keeps the
+    bytes it held. Raises Refused and NotCommitted."""
+    documents.add_shared(
+        data_dir,
+        committer,
+        name=name,
+        content=content,
+        follow=lambda document: _follow(data_dir, document),
+    )
+
+
+def _follow(data_dir: Path, document: documents.SharedDocument) -> list[Path]:
+    """Link `document` into every Application that was never sent and holds it, in place of
+    the bytes it was linked to, and return the links that moved. One whose record cannot be read
+    is left as it is: whether it was sent cannot be told. So is a file a human put in place of
+    the link."""
+    moved = []
+    for application in list_applications(data_dir).applications:
+        if application.sent:
+            continue
+        directory = data_dir / "applications" / application.folder
+        try:
+            held = _held(data_dir, records.load(directory / RECORD_NAME), directory)
+        except Malformed:
+            continue
+        link = directory / document.name
+        if (SHARED, document.name) not in held or documents.links_to(data_dir, document, link):
+            continue
+        if link.exists() and not link.is_symlink():
+            continue
+        link.unlink(missing_ok=True)
+        moved += documents.link(data_dir, [document], into=directory)
+    return moved
+
+
 def let_go(data_dir: Path, committer: Committer, folder: str, name: str) -> None:
     """Remove the Document called `name` from the Application in `folder`, and commit it. A
     shared one goes as a link only: the Documents tab and every other Application keep it. Raises

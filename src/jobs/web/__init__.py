@@ -33,6 +33,7 @@ from jobs.applications import (
     AlreadyBroughtIn,
     Application,
     Status,
+    add_shared,
     change_status,
     create_application,
     documents_of,
@@ -51,7 +52,7 @@ from jobs.applications import (
 )
 from jobs.clock import Clock
 from jobs.commits import Committer
-from jobs.documents import add_shared, list_shared
+from jobs.documents import list_shared
 from jobs.fetching import Network
 from jobs.letters import ANSWER_UNDER_WAY, Letters
 from jobs.models import Model

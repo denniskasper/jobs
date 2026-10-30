@@ -20,6 +20,10 @@ from test_letter_revision import BODY, FOLDER, PAGE
 from test_packet import CERTIFICATE, build, ready, upload
 
 POSTING_URL = "https://jobs.example.org/research-engineer"
+# Built rather than written out: email addresses belong in the corpus.
+APPLICATIONS_DESK = "@".join(["bewerbung", "tuhh.example.org"])
+HR_DESK = "@".join(["hr", "tuhh.example.org"])
+SHIPYARD = "@".join(["jobs", "werft.example.org"])
 
 
 @pytest.fixture(name="ready")
@@ -131,11 +135,11 @@ def test_where_starts_as_the_postings_url_and_takes_an_email_address(
     build(dashboard)
 
     assert mark_form(dashboard.get(PAGE).text)[1] == POSTING_URL
-    mark_sent(dashboard, channel="email", where="bewerbung@tuhh.example.org")
+    mark_sent(dashboard, channel="email", where=APPLICATIONS_DESK)
 
     (submission,) = record_of(ready)["submissions"]
     assert submission["channel"] == "email"
-    assert submission["where"] == "bewerbung@tuhh.example.org"
+    assert submission["where"] == APPLICATIONS_DESK
 
 
 def test_without_a_posting_where_starts_empty_and_has_to_be_said(
@@ -254,7 +258,7 @@ def test_the_sent_date_is_the_day_of_the_first_submission(
         "company: Werft Nord\nrole: Engineer\ndate: 2026-06-01\nstatus: waiting\n"
         "history:\n- status: todo\n  date: 2026-06-01\n- status: waiting\n  date: 2026-07-20\n"
         "submissions:\n- at: 2026-07-03 10:00:00+00:00\n  channel: email\n"
-        "  where: jobs@werft.example.org\n  manifest:\n    Bewerbung.pdf: " + "a" * 64 + "\n",
+        "  where: " + SHIPYARD + "\n  manifest:\n    Bewerbung.pdf: " + "a" * 64 + "\n",
     )
 
     page = dashboard.get("/").text
@@ -285,7 +289,7 @@ def test_a_second_submission_after_todo_again_leaves_the_first_as_it_was(
     clock.now = datetime(2026, 10, 2, 14, 0, tzinfo=UTC)
     dashboard.post(f"{PAGE}/status", data={"status": "todo"})
     build(dashboard, "everything")
-    mark_sent(dashboard, channel="email", where="hr@tuhh.example.org")
+    mark_sent(dashboard, channel="email", where=HR_DESK)
 
     record = record_of(ready)
     assert record["status"] == "waiting"

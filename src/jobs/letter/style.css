@@ -1,9 +1,54 @@
-/* The engine's stylesheet for a Letter: one A4 page in the reader's own serif, and nothing that
-   says whose it is. `letter/style.css` in the data directory takes its place. */
-@page { size: A4; margin: 25mm 25mm 20mm; }
-html { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.45; color: #111; }
+/* The engine's stylesheet for a Letter: one A4 page, a quiet sans-serif in dark grey with one
+   blue accent, and nothing that says whose it is. `letter/style.css` in the data directory takes
+   its place. The image carries Liberation Sans alone, so the families before it are for a machine
+   that has them. */
+@page { size: A4; margin: 20mm 22mm 18mm; }
+html {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #333;
+}
 body { margin: 0; }
-.recipient { font-style: normal; min-height: 40mm; margin-bottom: 8mm; }
-.date { text-align: right; margin: 0 0 10mm; }
-.body p { margin: 0 0 1em; }
-.body p:first-child { margin-bottom: 2em; }
+a { color: #2c5282; text-decoration: none; }
+
+.recipient { font-style: normal; min-height: 40mm; margin-bottom: 6mm; color: #333; }
+.date { text-align: right; margin: 0 0 8mm; color: #555; }
+
+.body p { margin: 0 0 0.75em; text-align: justify; text-align-last: left; hyphens: auto; }
+
+/* A first paragraph that is nothing but bold is the subject line: set in the accent, with a rule
+   under it, as a heading would be. */
+.body > p:first-child:has(> strong:only-child) {
+  font-size: 11.5pt;
+  font-weight: 600;
+  color: #2c5282;
+  text-align: left;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid #2c5282;
+  margin-bottom: 1.4em;
+}
+.body > p:first-child > strong:only-child { font-weight: inherit; color: inherit; }
+
+.body h1, .body h2, .body h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: #2c5282;
+  margin: 1.1em 0 0.35em;
+}
+.body h1 { font-size: 13pt; color: #1a1a1a; }
+.body hr { border: none; border-top: 1px solid #2c5282; margin: 0.6em 0 1em; }
+.body ul, .body ol { margin: 0 0 0.75em; padding-left: 1.3em; }
+.body li { margin: 0.15em 0; }
+.body strong { font-weight: 600; color: #1a1a1a; }
+.body blockquote {
+  margin: 0 0 0.75em;
+  padding: 0.4em 0.9em;
+  border-left: 3px solid #2c5282;
+  color: #555;
+}
+.body blockquote p { margin: 0.15em 0; }
+
+/* Nothing is split across the page edge that reads badly split. */
+.body p, .body li { orphans: 3; widows: 3; }
+.body h1, .body h2, .body h3 { break-after: avoid; }

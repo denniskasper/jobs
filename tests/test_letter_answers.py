@@ -462,3 +462,67 @@ def test_the_page_shows_an_answer_when_it_arrives_but_never_under_the_users_hand
         page.click("#letter button:has-text('Accept')")
         page.wait_for_selector("#letter .letter-body", state="attached")
     assert letter_path(data_dir).read_text(encoding="utf-8") == BODY + "\n"
+
+
+# What the page is told when it goes out of sight or comes back, as a browser tells it.
+SHOWN_AS = """shown => {
+    Object.defineProperty(document, 'visibilityState', {configurable: true, get: () => shown});
+    document.dispatchEvent(new Event('visibilitychange'));
+}"""
+NEW = "#conversation .message.new"
+
+
+def test_answers_that_came_since_the_last_visit_are_marked_new_and_the_tab_says_so(
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+    new_app: Starlette,
+) -> None:
+    if reason := no_chromium():
+        pytest.skip(reason)
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+    dashboard = TestClient(new_app)
+    ask_for_a_first_version(dashboard)
+    model.answers.append(ANSWER)
+    fetch_next_answer(dashboard)
+    with in_the_browser(new_app) as (page, origin):
+        # The first visit has nothing to compare with: nothing is new.
+        page.goto(f"{origin}{PAGE}")
+        title = page.title()
+        assert page.locator(NEW).count() == 0
+
+        # Away from the page, a message is sent and answered.
+        dashboard.post(f"{PAGE}/letter/say", data={"message": "Shorter, please."})
+        model.answers.append("Shorter now.")
+        fetch_next_answer(dashboard)
+
+        # Back again: the answer is new, and neither the earlier one nor what was said is.
+        page.goto(f"{origin}{PAGE}")
+        assert page.locator(NEW).all_text_contents() == [
+            page.locator("#conversation .message").last.text_content()
+        ]
+        assert "Shorter now." in (page.locator(NEW).text_content() or "")
+        assert page.title() == title
+
+        # Seen once, it is not new on the next visit.
+        page.goto(f"{origin}{PAGE}")
+        assert page.locator(NEW).count() == 0
+
+        # An answer that arrives while the page is out of sight marks its tab until it is seen.
+        page.clock.install(time=0)
+        page.clock.pause_at(2)
+        dashboard.post(f"{PAGE}/letter/say", data={"message": "And warmer."})
+        page.goto(f"{origin}{PAGE}")
+        page.evaluate(SHOWN_AS, "hidden")
+        model.answers.append("Warmer now.")
+        fetch_next_answer(dashboard)
+        page.clock.run_for(3000)
+        page.wait_for_selector(NEW, state="attached")
+        assert page.title() == f"● {title}"
+        assert "favicon-new.svg" in (page.get_attribute("link[rel=icon]", "href") or "")
+
+        page.evaluate(SHOWN_AS, "visible")
+        assert page.title() == title
+        assert "favicon-new.svg" not in (page.get_attribute("link[rel=icon]", "href") or "")
+        assert "Warmer now." in (page.locator(NEW).text_content() or "")

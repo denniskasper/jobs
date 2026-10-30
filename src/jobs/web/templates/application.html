@@ -200,7 +200,7 @@
       {% else %}
       <ol class="conversation">
         {% for message in standing.messages %}
-        <li class="message">
+        <li class="message"{% if not message.note and message.author != 'applicant' %} data-answer{% endif %}>
           {% if message.note %}
           <div class="message-from">{{ message.text }}</div>
           {% else %}
@@ -245,6 +245,47 @@
 {% endblock %}
 
 {% block after %}
+{% if standing.messages %}
+<script id="marks-new">
+  // The answers that came since this page was last seen are marked new, for as long as this
+  // visit lasts. What was seen is kept by the browser, which is the one place that knows; a
+  // first visit has nothing to compare with, so nothing on it is new. An answer that arrives
+  // while the page is out of sight marks its tab until the page is looked at.
+  (function () {
+    var key = 'seen:' + {{ application.folder|tojson }};
+    var title = document.title;
+    var icon = document.querySelector('link[rel="icon"]');
+    var plain = icon.href;
+    function answers() { return document.querySelectorAll('#conversation [data-answer]'); }
+    var kept = localStorage.getItem(key);
+    var seen = kept === null ? answers().length : Number(kept);
+    var since = seen;
+    function look() {
+      var all = answers();
+      all.forEach(function (answer, index) {
+        if (index < since || answer.classList.contains('new')) return;
+        answer.classList.add('new');
+        var label = document.createElement('span');
+        label.className = 'message-new';
+        label.textContent = 'New';
+        answer.querySelector('.message-from').append(' ', label);
+      });
+      if (document.visibilityState === 'visible') {
+        seen = all.length;
+        localStorage.setItem(key, String(seen));
+        document.title = title;
+        icon.href = plain;
+      } else if (all.length > seen) {
+        document.title = '\u25CF ' + title;
+        icon.href = {{ url_for('static', path='favicon-new.svg')|string|tojson }};
+      }
+    }
+    look();
+    document.addEventListener('visibilitychange', look);
+    document.addEventListener('kept-up', look);
+  })();
+</script>
+{% endif %}
 {% if not standing.read_only %}
 {# Outside the parts an answer brings up to date, so that it outlives them. #}
 <button type="button" class="cite" hidden>Cite</button>
@@ -327,6 +368,7 @@
           var brought = fresh.getElementById(part);
           if (brought) document.getElementById(part).replaceWith(brought);
         });
+        document.dispatchEvent(new Event('kept-up'));
         if (!fresh.getElementById('keeps-up')) clearInterval(turns);
       }).catch(function () {
         // The service is away or restarting: the next turn asks again.

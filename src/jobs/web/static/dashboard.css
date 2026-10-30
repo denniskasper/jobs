@@ -765,6 +765,9 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 /* What became of the Revision an answer carried, set off from who said it. */
 .message-revision { margin-left: 10px; color: var(--ink-2); font-weight: 500; }
 .message-text { color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* An answer that came since the page was last seen, for as long as this visit lasts. */
+.message.new { padding-left: 12px; border-left: 3px solid var(--accent); }
+.message-new { margin-left: 10px; color: var(--accent); font-weight: 600; }
 
 /* ───────── under every page: whose it is, and which version is running ───────── */
 

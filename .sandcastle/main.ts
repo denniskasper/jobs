@@ -1,3 +1,4 @@
+import './run-log.ts';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run, claudeCode } from '@ai-hero/sandcastle';

@@ -33,7 +33,10 @@ git push      # closes the tickets and deploys
 ```
 
 The next run notices the branch is on `main` and starts a fresh one. Logs are in
-`.sandcastle/logs/`.
+`.sandcastle/logs/`: each agent's own, and the runner's in `run.log`, appended to on every run.
+Follow a run started in the background with `tail -F .sandcastle/logs/run.log`. Never redirect
+its output to a shared path such as `/tmp/sandcastle-run.log`: other repositories' runners pick
+the same name and overwrite it.
 
 ## Files
 

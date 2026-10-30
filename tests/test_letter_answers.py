@@ -48,6 +48,9 @@ OTHER_PAGE = f"/applications/{OTHER_FOLDER}"
 # The few lines with which an Application's page asks for its own state, by the name it gives them.
 KEEPS_UP = 'id="keeps-up"'
 
+# The note of an answer under way, marked as busy so that it turns while it waits.
+BUSY = re.compile(r'<p[^>]*aria-busy="true"[^>]*>\s*An answer is under way')
+
 
 def send_again(dashboard: TestClient, page: str) -> str:
     """Press "Send again" under the Conversation a page shows, and give back the page it leads
@@ -148,6 +151,25 @@ def test_sending_again_asks_with_the_same_message_and_its_answer_makes_it_answer
     assert [each["from"] for each in kept(data_dir)] == ["applicant", "model"]
     # Committed with its answer, and not before.
     assert [each.paths for each in committer.commits] == [[conversation_path(data_dir)]]
+
+
+def test_an_answer_under_way_shows_itself_busy_until_it_has_come(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+) -> None:
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+
+    asked = ask_for_a_first_version(dashboard)
+
+    assert BUSY.search(asked)
+
+    model.answers.append(ANSWER)
+    fetch_next_answer(dashboard)
+
+    assert not BUSY.search(dashboard.get(PAGE).text)
 
 
 def test_a_message_that_was_answered_or_is_under_way_cannot_be_sent_again(

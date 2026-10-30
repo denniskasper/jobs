@@ -216,7 +216,7 @@
         {% endfor %}
       </ol>
       {% if standing.under_way %}
-      <p class="note" role="status">An answer is under way, which can take a few minutes. It
+      <p class="note" role="status" aria-busy="true">An answer is under way, which can take a few minutes. It
         shows here once it has come, and you may leave this page in the meantime.</p>
       {% elif standing.unanswered %}
       <p class="note" role="alert">No answer came{% if standing.reason %}: {{ standing.reason }}{% endif %}.</p>

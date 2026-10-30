@@ -248,9 +248,11 @@ button { font: inherit; color: inherit; }
 /* The one that takes something back, beside the one that goes ahead. */
 .add.quiet { background: none; color: var(--ink); border-color: var(--ink-3); }
 
-/* A form that waits on the network or the model, while it does. */
+/* A form that waits on the network or the model, while it does; and an answer under way, which
+   waits on the model after the page has come back. */
 .add[aria-busy="true"] { opacity: 0.6; cursor: progress; }
-.add[aria-busy="true"]::before {
+.add[aria-busy="true"]::before,
+.note[aria-busy="true"]::before {
   content: "";
   display: inline-block;
   width: 0.8em;
@@ -263,7 +265,8 @@ button { font: inherit; color: inherit; }
 
 /* Still where motion is not wanted: the label alone says it. */
 @media (prefers-reduced-motion: no-preference) {
-  .add[aria-busy="true"]::before { animation: busy-turn 800ms linear infinite; }
+  .add[aria-busy="true"]::before,
+  .note[aria-busy="true"]::before { animation: busy-turn 800ms linear infinite; }
   @keyframes busy-turn { to { transform: rotate(360deg); } }
 }
 

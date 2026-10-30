@@ -834,6 +834,13 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
   .form-input.code { font-size: 12px; }
   .status-change { min-height: 0; padding: 3px 6px; font-size: 14px; }
 
+  /* The Status takes the room it needs and the Role the rest, so the list runs the full width;
+     the badge keeps the width of the longest label, so each box to change it sits in one column. */
+  #apps-table .col-position { width: auto; }
+  #apps-table td.status { display: table-cell; width: 1%; padding: 10px 0; white-space: nowrap; vertical-align: top; }
+  #apps-table td.status .badge { min-width: 6.5em; margin-right: 10px; vertical-align: middle; }
+  #apps-table td.status form { display: inline-block; vertical-align: middle; }
+  #apps-table td.status .status-change { width: auto; }
   input[type="checkbox"] { width: 16px; height: 16px; }
 
   /* The end of the list is in reach here. */

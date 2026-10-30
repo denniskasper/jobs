@@ -94,7 +94,8 @@ Application's page asks for the PDF and closed again; the page it prints is buil
 runs no script, and the PDF is kept nowhere. Where Chromium cannot start, the place of the PDF says
 why and everything else about a Letter works. The Letter is set in the engine's template unless the
 data repository holds `letter/template.html` and `letter/style.css`, either or both; a template is
-handed `stylesheet`, `address` as its lines, `date` and `body`.
+handed `stylesheet`, `address` as its lines, `date` and `body`. Building a Packet prints the Letter
+the same way and merges the rest in Python, so it needs nothing more either.
 
 No other credential belongs in this deployment. In particular nothing employer-facing: no portal
 login, no mail account (decisions 24 and 33).

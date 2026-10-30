@@ -92,6 +92,11 @@ A model writes a Letter from what you place in the data directory by hand:
 Without the Brief, asking for a Letter is refused; the page of a Letter says when the resume or
 the examples are missing.
 
+A Packet is built from an Application's page, in one of four shapes, and its files are named after
+your surname, which `data/letter/applicant.yaml` names as `surname: <your surname>`; without it no
+Packet is built. Merged files put the resume right after the Letter: it is the Document whose name
+says Lebenslauf, CV or resume.
+
 ## No login
 
 The app has no login. Both ways above listen on your own machine only, at `127.0.0.1`; do not

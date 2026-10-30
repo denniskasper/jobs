@@ -26,8 +26,8 @@ from jobs.records import Malformed, NotCommitted, Refused
 SHARED_NAME = "shared.yaml"
 
 # The filenames in an Application folder that a shared Document cannot take: its record, the
-# Posting it holds, its Letter, and the Conversation about that.
-_NOT_DOCUMENTS = ("application.yaml", "posting.yaml", "letter.md", "conversation.yaml")
+# Posting it holds, its Letter, the Conversation about that, and the folder its Packet is built in.
+_NOT_DOCUMENTS = ("application.yaml", "posting.yaml", "letter.md", "conversation.yaml", "packet")
 
 _EXTENSION = r"\.[a-z0-9]{1,10}"
 _STORED = re.compile(rf"[0-9a-f]{{64}}({_EXTENSION})?")

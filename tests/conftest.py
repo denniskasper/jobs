@@ -150,8 +150,42 @@ def model() -> ScriptedModel:
     return ScriptedModel()
 
 
-# What the printer of the fixtures gives back for every page: enough to be told from anything else.
-PDF = b"%PDF-1.7 printed by the fixtures"
+def pdf_of(*pages: str) -> bytes:
+    """A PDF with one A4 page per text, each page carrying its text in a single line, which a PDF
+    library reads back."""
+    font = 3
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [%s] /Count %d >>"
+        % (b" ".join(b"%d 0 R" % (4 + 2 * at) for at in range(len(pages))), len(pages)),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    for at, text in enumerate(pages):
+        escaped = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        stream = b"BT /F1 12 Tf 72 770 Td (%s) Tj ET" % escaped.encode("latin-1")
+        objects += [
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>" % (font, 5 + 2 * at),
+            b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream),
+        ]
+    out = bytearray(b"%PDF-1.7\n")
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n%s\nendobj\n" % (number, body)
+    table = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objects) + 1)
+    out += b"".join(b"%010d 00000 n \n" % offset for offset in offsets)
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (
+        len(objects) + 1,
+        table,
+    )
+    return bytes(out)
+
+
+# What the printer of the fixtures gives back for every page: a PDF of one page, whose text tells
+# it from anything else.
+PDF = pdf_of("Printed by the fixtures")
 
 
 @dataclass

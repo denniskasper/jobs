@@ -20,6 +20,7 @@
   <nav class="jump" aria-label="On this page">
     <a href="#posting">Posting</a>
     <a href="#documents">Documents</a>
+    <a href="#packet">Packet</a>
     <a href="#letter">Letter</a>
     <a href="#conversation">Conversation</a>
   </nav>
@@ -152,6 +153,41 @@
         <button type="submit" class="add">Upload</button>
       </form>
       {% endif %}
+      {% endif %}
+    </section>
+
+    <section class="application-part" id="packet" aria-labelledby="packet-title">
+      <h2 class="application-title" id="packet-title">Packet</h2>
+      {% if refusal and entered.packet %}
+      <div class="note" role="alert">
+        <p><strong>{{ entered.packet }}</strong> {{ refusal }}</p>
+      </div>
+      {% endif %}
+      {% if packet %}
+      <ul class="held packet">
+        {% for name in packet %}
+        <li class="held-document"><a class="packet-file" href="{{ url_for('packet_file', folder=application.folder, name=name) }}" download>{{ name }}</a></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="note">No Packet has been built.</p>
+      {% endif %}
+      {% if not prints %}
+      <p class="note" role="status">{{ no_packet_printer }}</p>
+      {% elif application.status != 'todo' %}
+      <p class="note">This Application is {{ application.status.label }}, so no Packet can be built for it.</p>
+      {% else %}
+      <form method="post" action="{{ url_for('build_packet', folder=application.folder) }}" class="written" data-busy="Building…">
+        <fieldset class="form-group shapes">
+          <legend class="form-label">Shape</legend>
+          {% for shape in shapes %}
+          <label class="shape"><input type="radio" name="shape" value="{{ shape.value }}"{% if shape == default_shape %} checked{% endif %}> {{ shape.label }}</label>
+          {% endfor %}
+          <p class="note">The Letter, then its Documents in their order, the resume first. Building again
+            replaces what was built before.</p>
+        </fieldset>
+        <button type="submit" class="add">Build</button>
+      </form>
       {% endif %}
     </section>
     </div>

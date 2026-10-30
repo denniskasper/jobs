@@ -28,7 +28,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from jobs import __version__, guess
+from jobs import __version__, guess, packets
 from jobs.applications import (
     AlreadyBroughtIn,
     Application,
@@ -151,6 +151,14 @@ WRITTEN_FIELDS = ("notes", "address")
 
 # What is said where a PDF of a Letter would be, by a service that was started without a printer.
 NO_PRINTER = "No PDF can be built: this service was started without a printer."
+
+# What a built file of a Packet is served as.
+_MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 
 # What an Application's page adds to its address to show a waiting Revision as the PDF it would
 # make, where it shows the difference without it.
@@ -407,6 +415,7 @@ def create_app(
         again: bool = False,
         text: str = "",
         not_done: str = "",
+        about: str = "documents",
     ) -> Response:
         # Another address than the Application's own shows it when a link brought in again led
         # there with a text.
@@ -431,6 +440,7 @@ def create_app(
         except Malformed:
             # The Documents tab says why; here there is only nothing to add.
             shared = []
+        packet = packets.built(data_dir, folder)
         return page(
             request,
             "application.html",
@@ -461,8 +471,13 @@ def create_app(
                 # and asking for that again would not be asking for this page.
                 "keeps_up": at_own_address and refusal is None and standing.under_way,
                 "status_badges": STATUS_BADGES,
-                # A refusal about its Documents is said beside them, under what was not done.
-                "entered": {"documents": not_done} if not_done else {},
+                "packet": packet,
+                "shapes": list(packets.Shape),
+                "default_shape": packets.DEFAULT,
+                "no_packet_printer": packets.NO_PRINTER,
+                # A refusal about its Documents or its Packet is said beside them, under what was
+                # not done.
+                "entered": {about: not_done} if not_done else {},
             },
             refusal,
         )
@@ -584,6 +599,45 @@ def create_app(
             move_document,
             str(form.get("name", "")),
             up=form.get("direction") == "up",
+        )
+
+    async def build_packet(request: Request) -> Response:
+        form = await request.form()
+        folder = request.path_params["folder"]
+        try:
+            if printer is None:
+                raise Refused(packets.NO_PRINTER)
+            # Off the event loop: a browser is started for the Letter.
+            await run_in_threadpool(
+                packets.build,
+                data_dir,
+                committer,
+                letters,
+                printer,
+                folder,
+                shape=str(form.get("shape", packets.DEFAULT)),
+                on=clock().date(),
+            )
+        except Refused as refusal:
+            return render_application(request, refusal, not_done="Not built.", about="packet")
+        except NotCommitted as not_committed:
+            return render_application(request, not_committed)
+        return RedirectResponse(
+            str(request.url_for("application", folder=folder)) + "#packet", status_code=303
+        )
+
+    def packet_file(request: Request) -> Response:
+        name = request.path_params["name"]
+        try:
+            path = packets.file_of(data_dir, request.path_params["folder"], name)
+        except NotFound as not_found:
+            return PlainTextResponse(str(not_found), status_code=404)
+        return FileResponse(
+            path,
+            media_type=_MEDIA_TYPES.get(Path(name).suffix.lower(), "application/octet-stream"),
+            filename=name,
+            # Built anew under the same name whenever the Packet is built again.
+            headers={"Cache-Control": "no-store"},
         )
 
     async def ask_for_letter(request: Request) -> Response:
@@ -985,6 +1039,8 @@ def create_app(
             Route(
                 "/applications/{folder:path}/documents/move", move_held_document, methods=["POST"]
             ),
+            Route("/applications/{folder:path}/packet", build_packet, methods=["POST"]),
+            Route("/applications/{folder:path}/packet/{name}", packet_file),
             Route("/applications/{folder:path}/letter/ask", ask_for_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/say", say_about_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/again", send_again, methods=["POST"]),

@@ -24,6 +24,7 @@ the part that lives outside it, set up once by hand.
 | `PROSE_MODEL` | Dokploy environment, optional, default whatever `MODEL` is | The model that writes Letters, so that prose can run on the best model while registration runs on another (decision 31). Asked through the same command with the same credential, and given no tools either. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | Dokploy environment | How the `claude` command in the image is signed in. Minted by hand with `claude setup-token`, good for a year. |
 | `POLL_EVERY_HOURS` | optional, default `24` | How long after its last poll a Source is polled again, with nobody asking. `0` turns the schedule off and leaves polling to the dashboard. |
+| `DEV` | unset in the container | `1` on a dev server: every page carries a banner saying it is not the deployed service. |
 
 At start the service clones `DATA_REPO_URL` into an empty `DATA_DIR`, or fast-forwards the clone
 already there (`src/jobs/store.py`). The token is handed to git through its environment; it is

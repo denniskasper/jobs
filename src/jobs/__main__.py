@@ -55,6 +55,8 @@ def main() -> None:
         printer=ChromiumPrinter(),
         schedule=_schedule(),
         runner=on_a_daemon_thread,
+        # Set by the dev server, so its pages say they are not the deployed service's.
+        development=os.environ.get("DEV") == "1",
     )
     uvicorn.run(
         app, host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", "8000"))

@@ -187,15 +187,18 @@ def create_app(
     sleep: Callable[[float], None] = time.sleep,
     schedule: Schedule | None = None,
     runner: Runner | None = None,
+    development: bool = False,
 ) -> Starlette:
     """Build the service around its injected boundaries. Without a `prose_model` Letters are
     written by `model`, which registration asks. Without a `printer` no PDF of a Letter
     can be built, and the page says so. `sleep` is how the time between two
     requests to one host is waited out. Without a `schedule` a poll only runs when asked for.
     Without a `runner` a Registration waits until `app.state.registrations` is told to run the
-    next one, and an answer about a Letter until `app.state.letters` is told to fetch it."""
+    next one, and an answer about a Letter until `app.state.letters` is told to fetch it.
+    `development` puts a banner on every page, so a dev server is never taken for the real one."""
     templates = Jinja2Templates(directory=HERE / "templates")
     templates.env.globals["version"] = __version__
+    templates.env.globals["development"] = development
     # A model writes Markdown. It is set as such, and any markup in it is shown, never run.
     templates.env.filters["markdown"] = lambda text: Markup(_MARKDOWN.render(text))
     templates.env.filters["markdown_inline"] = lambda text: Markup(_MARKDOWN.renderInline(text))

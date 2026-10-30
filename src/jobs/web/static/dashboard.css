@@ -140,6 +140,20 @@ button { font: inherit; color: inherit; }
   color: var(--ink-3);
 }
 
+.dev-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 6px var(--gutter);
+  background: var(--st-todo);
+  color: #1A2238;
+  font-family: var(--label);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 /* ───────── headline ───────── */
 
 .lede {
@@ -819,6 +833,7 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
   .form-input { font-size: 15px; }
   .form-input.code { font-size: 12px; }
   .status-change { min-height: 0; padding: 3px 6px; font-size: 14px; }
+
   input[type="checkbox"] { width: 16px; height: 16px; }
 
   /* The end of the list is in reach here. */

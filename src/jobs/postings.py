@@ -213,6 +213,17 @@ def mark(data_dir: Path, source: str, name: str, what: Mark, moment: datetime) -
     return path
 
 
+def pursued_as(data_dir: Path, identity: tuple[str, str]) -> list[tuple[str, str]]:
+    """The Source and name of every kept Posting with `identity` that is marked pursued. A file
+    that cannot be read is none of them."""
+    return [
+        (folder.name, posting.name)
+        for folder in sorted(path for path in (data_dir / "postings").glob("*") if path.is_dir())
+        for posting in list_postings(data_dir, folder.name).postings
+        if posting.pursued and posting.identity == identity
+    ]
+
+
 def read_text(data_dir: Path, source: str, name: str) -> str:
     """A kept Posting as it stands in its file, to be stored somewhere else as well. Raises
     OSError."""
@@ -300,6 +311,9 @@ class KeptPosting:
     brought_in_by_hand: date | None = None
     """The day it was brought in by hand with its Application, for one that belongs to no
     Source."""
+    identity: tuple[str, str] | None = None
+    """How it is identified within its Source, and by what value; None for one brought in by
+    hand, which belongs to no Source."""
 
     def expired(self, today: date) -> bool:
         """Past its Deadline. The day of the Deadline itself still counts."""
@@ -362,7 +376,16 @@ def _parse(record: dict[Any, Any], name: str) -> KeptPosting:
         dismissed=_moment(record, "dismissed"),
         pursued=_moment(record, "pursued"),
         brought_in_by_hand=_day(record, "brought_in_by_hand"),
+        identity=_identity(record),
     )
+
+
+def _identity(record: dict[Any, Any]) -> tuple[str, str] | None:
+    identified = record.get("identity")
+    if not isinstance(identified, dict):
+        return None
+    by, value = identified.get("by"), identified.get("value")
+    return (by, value) if isinstance(by, str) and isinstance(value, str) else None
 
 
 def _pay(remuneration: Any) -> str | None:

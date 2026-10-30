@@ -35,7 +35,6 @@ from jobs.applications import (
     Status,
     change_status,
     create_application,
-    delete_application,
     give_text,
     holding,
     lacks_text,
@@ -485,7 +484,7 @@ def create_app(
     def delete_held_back(folder: str) -> Application:
         # Nothing is asked about its Letter while it goes, and nothing goes while an answer comes.
         with letters.held_back(folder):
-            return delete_application(data_dir, committer, folder)
+            return proposing.delete(folder)
 
     async def delete(request: Request) -> Response:
         folder = request.path_params["folder"]

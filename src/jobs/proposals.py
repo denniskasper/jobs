@@ -18,7 +18,7 @@ from pathlib import Path
 from jobs import applications, records
 from jobs.clock import Clock
 from jobs.commits import CommitFailed, Committer
-from jobs.postings import KeptPosting, list_postings, mark, read_text
+from jobs.postings import KeptPosting, list_postings, mark, pursued_as, read_text
 from jobs.records import Malformed, NotCommitted, NotFound, Refused
 from jobs.relevance import Relevance, Rules, rules_from
 
@@ -174,10 +174,11 @@ def _place(
     def left_out(why: Why, reason: str) -> LeftOut:
         return LeftOut(source=source, posting=posting, why=why, reason=reason)
 
-    if posting.pursued:
-        return left_out(Why.PURSUED, f"Pursued on {posting.pursued.date().isoformat()}")
+    # Before the pursuit: one dismissed once its Application was deleted carries both marks.
     if posting.dismissed:
         return left_out(Why.DISMISSED, f"Dismissed on {posting.dismissed.date().isoformat()}")
+    if posting.pursued:
+        return left_out(Why.PURSUED, f"Pursued on {posting.pursued.date().isoformat()}")
     if posting.rejected:
         return left_out(Why.REJECTED, f"Its Source's filter rules removed it: {posting.rejected}")
     verdict = settings.relevance.judge(posting)
@@ -292,6 +293,33 @@ class Proposals:
                     "the Posting will commit the mark on the Posting."
                 ) from failed
             return scaffolded.application
+
+    def delete(self, folder: str) -> applications.Application:
+        """The Deletion of the Application in `folder`. The kept Posting it was pursued from, when
+        there is one still, is marked dismissed in the same commit. Raises NotFound, Refused and
+        NotCommitted."""
+        # With the lock the Pursue Gate takes, so one Posting is never both pursued and dismissed
+        # by two requests at once.
+        with self._one_at_a_time:
+            return applications.delete_application(
+                self.data_dir, self.committer, folder, dismissing=self._dismiss_pursued
+            )
+
+    def _dismiss_pursued(self, posting: KeptPosting) -> list[Path]:
+        if posting.identity is None:
+            return []
+        paths: list[Path] = []
+        for source, name in pursued_as(self.data_dir, posting.identity):
+            try:
+                path = mark(self.data_dir, source, name, "dismissed", self.clock())
+            except (Malformed, OSError) as error:
+                raise Refused(
+                    f"Nothing was deleted: {source}/{name}, which it was pursued from, could not "
+                    f"be dismissed: {error}."
+                ) from error
+            if path:
+                paths.append(path)
+        return paths
 
     def _proposed(self, source: str, name: str, *, shown: bool = False) -> KeptPosting:
         listing = self.look()

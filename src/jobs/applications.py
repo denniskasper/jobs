@@ -6,7 +6,7 @@ that cannot be read is reported as a Problem beside the ones that can, never rai
 """
 
 import shutil
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
@@ -348,15 +348,29 @@ def change_status(data_dir: Path, committer: Committer, folder: str, *, to: str,
     )
 
 
-def delete_application(data_dir: Path, committer: Committer, folder: str) -> Application:
+def delete_application(
+    data_dir: Path,
+    committer: Committer,
+    folder: str,
+    *,
+    dismissing: Callable[[KeptPosting], Sequence[Path]] = lambda posting: [],
+) -> Application:
     """Delete the Application in `folder`: remove its folder, and its company's folder when that
     is left empty, and commit the removal under a message naming the role and the company. The
     shared Documents linked into it go as links only. One that was ever sent is refused: it can
-    only be closed. Gives back what was deleted. Raises NotFound, Refused and NotCommitted."""
+    only be closed. `dismissing` is handed the Posting it holds before anything is removed, and
+    the files it gives back are committed with the removal. Gives back what was deleted. Raises
+    NotFound, Refused and NotCommitted."""
     directory = directory_of(data_dir, folder)
     # Its record names what is deleted, so one that cannot be read is left as it is.
     application = read_application(data_dir, folder)
     refuse_if_sent(application)
+    try:
+        held = posting_of(data_dir, folder)
+    except Malformed:
+        # Nothing can be told about where it came from, and that does not keep it.
+        held = None
+    dismissed = list(dismissing(held)) if held is not None else []
     try:
         shutil.rmtree(directory)
     except OSError as error:
@@ -368,7 +382,7 @@ def delete_application(data_dir: Path, committer: Committer, folder: str) -> App
     try:
         committer.commit(
             f"Delete Application {folder}, {application.role} at {application.company}",
-            [directory],
+            [directory, *dismissed],
         )
     except CommitFailed as failed:
         raise NotCommitted(

@@ -10,12 +10,22 @@ from typing import Any
 
 from starlette.testclient import TestClient
 
-from conftest import RememberedCommits, ScriptedModel, WriteApplication, fetch_next_answer
+from conftest import (
+    NOW,
+    Pages,
+    RememberedCommits,
+    ScriptedModel,
+    SettableClock,
+    WriteApplication,
+    fetch_next_answer,
+)
 from test_bringing_in import FOLDER, LINK, TEXT, create
 from test_documents import RESUME, add_document
 from test_letter_revision import ANSWER, RECORD, ask_for_a_first_version, difference_on, write_brief
 from test_letter_revision import FOLDER as LETTER_FOLDER
 from test_letter_revision import PAGE as LETTER_PAGE
+from test_polling import LISTING, POSTING, listing_of, page_of, record, write_source
+from test_proposals import DAY, on_disk
 
 PAGE = f"/applications/{FOLDER}"
 OTHER = "nordwind-robotics/2026-09-18-test-engineer"
@@ -335,3 +345,82 @@ def test_a_revision_waiting_for_a_decision_goes_with_the_application(
 
     assert deleted.status_code == 303
     assert not (data_dir / "applications" / LETTER_FOLDER).exists()
+
+
+PURSUED = "hafenstadt-institute-of-technology/2026-09-18-doctoral-researcher"
+
+
+def pursue(dashboard: TestClient, data_dir: Path, network: Pages) -> Path:
+    """Poll a Source that keeps one Posting and tick it at the Pursue Gate. Gives back the kept
+    Posting."""
+    write_source(data_dir, "hafenstadt")
+    network.serve(LISTING, listing_of(101))
+    network.serve(POSTING.format(101), page_of(record("Doctoral researcher", "101")))
+    dashboard.post("/sources/hafenstadt/poll")
+    [path] = (data_dir / "postings" / "hafenstadt").glob("*.yaml")
+    dashboard.get("/proposals")
+    dashboard.post("/proposals", data={"posting": f"hafenstadt/{path.stem}"})
+    assert (data_dir / "applications" / PURSUED).is_dir()
+    return path
+
+
+def test_deleting_a_pursued_application_dismisses_its_posting_in_the_same_commit(
+    dashboard: TestClient,
+    data_dir: Path,
+    network: Pages,
+    clock: SettableClock,
+    committer: RememberedCommits,
+) -> None:
+    kept = pursue(dashboard, data_dir, network)
+    clock.now = NOW + DAY
+
+    deleted = confirm(dashboard, PURSUED)
+
+    assert deleted.status_code == 303
+    assert on_disk(kept)["dismissed"] == NOW + DAY
+    assert on_disk(kept)["pursued"] == NOW
+    commit = committer.commits[-1]
+    assert "Doctoral researcher" in commit.message
+    assert commit.paths == [data_dir / "applications" / PURSUED, kept]
+
+
+def test_left_out_then_shows_the_posting_dismissed_and_it_is_not_proposed_again(
+    dashboard: TestClient, data_dir: Path, network: Pages, clock: SettableClock
+) -> None:
+    pursue(dashboard, data_dir, network)
+    clock.now = NOW + DAY
+    confirm(dashboard, PURSUED)
+
+    clock.now = NOW + 2 * DAY
+    dashboard.post("/sources/hafenstadt/poll")
+
+    assert "Nothing is proposed." in dashboard.get("/proposals").text
+    left_out = dashboard.get("/proposals/left-out").text
+    assert "Doctoral researcher" in left_out
+    assert "Dismissed on 2026-09-19" in left_out
+    assert "Pursued on" not in left_out
+
+
+def test_deleting_one_brought_in_by_hand_dismisses_nothing(
+    dashboard: TestClient, data_dir: Path, network: Pages, committer: RememberedCommits
+) -> None:
+    kept = pursue(dashboard, data_dir, network)
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer", link=LINK, text=TEXT)
+
+    confirm(dashboard)
+
+    assert "dismissed" not in on_disk(kept)
+    assert committer.commits[-1].paths == [data_dir / "applications" / FOLDER]
+
+
+def test_deleting_one_whose_posting_is_no_longer_kept_goes_ahead_and_dismisses_nothing(
+    dashboard: TestClient, data_dir: Path, network: Pages, committer: RememberedCommits
+) -> None:
+    pursue(dashboard, data_dir, network).unlink()
+
+    deleted = confirm(dashboard, PURSUED)
+
+    assert deleted.status_code == 303
+    assert not (data_dir / "applications" / PURSUED).exists()
+    assert list((data_dir / "postings" / "hafenstadt").glob("*.yaml")) == []
+    assert committer.commits[-1].paths == [data_dir / "applications" / PURSUED]

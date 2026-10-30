@@ -80,25 +80,40 @@ it holds the Posting brought in with it, and an unsolicited approach written by 
 _Avoid_: bewerbung, submission, case
 
 **Packet**:
-The exact set of files sent in one go. Packet shape is a property of the receiving channel, not of
-the Application: one portal wants three separate uploads, another wants a single merged PDF.
+The exact set of files sent in one go: an Application's Documents in one of four shapes, chosen each
+time a Packet is built — everything in one PDF; the Letter and the rest; the Letter, the resume and
+the rest; or one file per Document. The default is the Letter, the resume and the rest, as most portals
+want it. Merged files follow the order the Documents have on the Application, the Letter first and
+the resume next. Building one writes its files into the Application's folder, named in German after
+the applicant's surname (`<Surname>_Anschreiben.pdf`, `_Lebenslauf.pdf`, `_Anlagen.pdf`, or
+`_Bewerbung.pdf` for everything in one), and building again replaces them. It can be built only
+while its Application is `todo`, has a Letter, and has no Revision waiting and no answer under way.
+Packet shape is a property of the receiving channel, not of the Application: one
+portal wants three separate uploads, another wants a single merged PDF.
 _Avoid_: bundle, attachment set, documents
 
 **Submission**:
-One act of sending a Packet. Carries a timestamp, a channel, and the frozen Manifest. An Application
-can have several, because the same employer can be applied to more than once.
+One act of sending a Packet, recorded when the applicant marks it sent, which moves the Application
+from `todo` to `waiting`. Carries a timestamp, a channel, where it went (the Posting's URL or an
+email address, unless changed), and the frozen Manifest. An Application
+can have several, because the same employer can be applied to more than once: setting its Status
+back to `todo` lets a new Packet be built, and earlier Submissions stay as they were.
 _Avoid_: apply, send, delivery
 
 ### Documents and proof
 
 **Document**:
-One file belonging to an Application. Shared Documents (resume, Zeugnisse, profile, photo) are stored
-once by content hash and referenced; Documents unique to an Application (its Letter) are stored in
-its folder.
+One file belonging to an Application. Shared Documents (resume, each Zeugnis, each certificate,
+profile, photo) are stored once by content hash and referenced, one file each, and can be added to
+or removed from any Application that has not been sent. A Document is a PDF or an image (JPG,
+PNG), which a merged PDF takes as a page of its own; anything else is refused. Until its Freeze an Application follows the
+newest version of each shared Document it holds. Documents unique to an Application (its Letter, a
+resume tailored for that employer, a form the employer sent) are stored in its folder. An
+Application's Documents are what it sends: there is no second choice per Packet.
 _Avoid_: file, attachment, asset
 
 **Letter**:
-The cover letter of an Application, the one Document written for it alone. An Application has at
+The cover letter of an Application, the one Document a model writes for it. An Application has at
 most one. A model only ever writes its *body*, from the subject line through the closing formula;
 what is fact — who it is from, who it goes to, the date — is not prose and is not the model's to
 change. It fits on one A4 page, which keeps its body to about 250 words. It can be revised only
@@ -134,7 +149,8 @@ its content at that instant. It is what makes "what exactly did I send them" ans
 _Avoid_: log, receipt, index
 
 **Freeze**:
-The act of hashing a Packet and writing its Manifest at Submission. Before Freeze, Documents are
+The act of hashing the Packet as it was built, not the Documents as they are by then, and writing
+its Manifest at Submission. Before Freeze, Documents are
 editable; after it, the Manifest is the authority on what was sent.
 _Avoid_: lock, commit, seal
 
@@ -192,8 +208,8 @@ declined).
 _Avoid_: state, stage, past
 
 **Sent date**:
-The day an Application went out. Until Submissions are recorded, it is the day its Status first
-became `waiting` or `interview`. An Application closed without ever reaching either was never
+The day an Application went out: the day of its first Submission, or, for one sent without a
+Submission being recorded, the day its Status first became `waiting` or `interview`. An Application closed without ever reaching either was never
 sent; one whose history does not say when it got there was sent on a day nobody recorded.
 _Avoid_: applied date, submission date
 

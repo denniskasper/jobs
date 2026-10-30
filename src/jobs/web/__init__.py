@@ -64,6 +64,7 @@ from jobs.sources import (
     set_enabled,
 )
 from jobs.sources import accept as accept_rederivation
+from jobs.timeline import timeline
 from jobs.web import bookmark
 
 HERE = Path(__file__).parent
@@ -239,6 +240,7 @@ def create_app(
             {
                 "applications": listing.applications,
                 "problems": listing.problems,
+                "timeline": timeline(listing.applications, clock().date()),
                 "entered": {},
                 "statuses": list(Status),
                 "status_badges": STATUS_BADGES,

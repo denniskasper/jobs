@@ -184,3 +184,15 @@ Where an Application currently stands. One of: `todo` (passed the Pursue Gate, n
 `waiting` (submitted, no answer), `interview` (in conversation), `closed` (rejected, withdrawn or
 declined).
 _Avoid_: state, stage, past
+
+**Sent date**:
+The day an Application went out. Until Submissions are recorded, it is the day its Status first
+became `waiting` or `interview`. An Application closed without ever reaching either was never
+sent; one whose history does not say when it got there was sent on a day nobody recorded.
+_Avoid_: applied date, submission date
+
+**Timeline**:
+The dashboard's picture of every Application sent, one dot in the week of its Sent date, in the colour of
+its current Status, under a sentence that says how many roles are still `todo` and how the sent ones
+stand.
+_Avoid_: chart, history, activity

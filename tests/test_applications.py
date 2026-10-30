@@ -112,7 +112,7 @@ def test_every_status_change_is_recorded_with_its_date(
     assert waiting.status_code == 200
     assert "Waiting" in waiting.text
     assert "Interview" in interview.text
-    assert "Waiting" not in interview.text
+    assert ">Waiting</span>" not in interview.text
     record = read_record(data_dir, folder)
     assert record["status"] == "interview"
     assert record["date"] == date(2026, 9, 18)

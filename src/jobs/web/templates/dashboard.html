@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 
 {% block shell %}
+  {% if applications %}
+  <h1 class="lede">{{ timeline.headline }}</h1>
+  <p class="summary">{{ timeline.summary }}</p>
+  {% else %}
   <h1 class="lede">Applications</h1>
+  {% endif %}
 
   <div class="bar">
     {% set tab = 'applications' %}{% include "tabs.html" %}
@@ -26,6 +31,29 @@
     {% if not applications %}
     <p class="note">No Applications yet.</p>
     {% else %}
+    {% if timeline.dots %}
+    <figure class="timeline">
+      <figcaption>Every application sent, in the week it went out</figcaption>
+      <div class="timeline-plot" style="--tallest: {{ timeline.tallest }}">
+        {% for dot in timeline.dots %}
+        {% set application = dot.application %}
+        {% set said = application.company ~ ", " ~ application.role ~ ": sent " ~ application.sent_on.isoformat() ~ ", " ~ application.status.label %}
+        <a class="dot dot-{{ application.status.value }}" href="{{ url_for('application', folder=application.folder) }}" style="--at: {{ dot.at }}%; --row: {{ dot.row }}" title="{{ said }}" aria-label="{{ said }}"></a>
+        {% endfor %}
+        {% for label in timeline.labels %}
+        <span class="dot-label{{ ' early' if label.at < 10 }}{{ ' late' if label.at > 90 }}" style="--at: {{ label.at }}%; --row: {{ label.row }}" aria-hidden="true">{{ label.text }}</span>
+        {% endfor %}
+      </div>
+      <div class="timeline-axis" aria-hidden="true">
+        {% for month in timeline.months %}<span class="month" style="--at: {{ month.at }}%">{{ month.name }}</span>{% endfor %}
+      </div>
+      <ul class="timeline-legend">
+        <li class="badge badge-interview">Interview</li>
+        <li class="badge badge-applied">Waiting for a reply</li>
+        <li class="badge badge-closed">Closed or rejected</li>
+      </ul>
+    </figure>
+    {% endif %}
     <table id="apps-table">
       <thead>
         <tr>

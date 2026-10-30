@@ -409,6 +409,90 @@ input[type="checkbox"] {
 .badge-interview { color: var(--ink); font-weight: 600; }
 .badge-closed { color: var(--ink-3); }
 
+/* ───────── the Timeline: what went out, on the day it went out ───────── */
+
+.summary {
+  max-width: 62ch;
+  margin: 0 0 24px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.timeline { margin: 4px 0 32px; --dot: 10px; --step: 13px; }
+
+.timeline figcaption {
+  margin-bottom: 14px;
+  font-family: var(--label);
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+/* Room above the tallest stack for an interview's name. */
+.timeline-plot {
+  position: relative;
+  height: calc(var(--tallest) * var(--step) + 22px);
+  margin: 0 6px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.timeline .dot {
+  position: absolute;
+  left: var(--at);
+  bottom: calc(var(--row) * var(--step) + 3px);
+  width: var(--dot);
+  height: var(--dot);
+  margin-left: calc(var(--dot) / -2);
+  border-radius: 50%;
+}
+
+/* The mark is small; what a pointer or a finger has to hit is not. */
+.timeline .dot::before { content: ''; position: absolute; inset: -2px -4px; }
+
+.dot-interview { background: var(--st-interview); }
+.dot-waiting   { background: var(--st-waiting); }
+.dot-closed    { box-shadow: inset 0 0 0 1.5px var(--ink-3); opacity: 0.6; }
+
+/* An interview is named above its week's stack. */
+.dot-label {
+  position: absolute;
+  left: var(--at);
+  bottom: calc(var(--row) * var(--step) + 6px);
+  transform: translateX(-50%);
+  font-family: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Near an edge the name runs inward from its stack rather than past the edge. */
+.dot-label.early { transform: translateX(-6px); }
+.dot-label.late  { transform: translateX(calc(-100% + 6px)); }
+
+.timeline-axis { position: relative; height: 22px; margin: 0 6px; }
+
+.timeline-axis .month {
+  position: absolute;
+  left: var(--at);
+  top: 6px;
+  font-family: var(--label);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-legend .badge { font-size: 13px; }
+
 /* ───────── what the page says about itself ───────── */
 
 .note {
@@ -764,6 +848,7 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 
 /* What only a pointer can do. */
 @media (hover: hover) {
+  .timeline .dot:hover { outline: 2px solid var(--ink); outline-offset: 2px; }
   .tab:hover { color: var(--ink-2); }
   .add:hover { opacity: 0.85; }
   .icon-btn:hover { border-color: var(--ink-3); color: var(--ink); }

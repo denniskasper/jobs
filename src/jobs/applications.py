@@ -21,6 +21,9 @@ from jobs.records import AlreadyExists, Malformed, NotCommitted, NotFound, Refus
 
 RECORD_NAME = "application.yaml"
 
+# The type, under a name the field `Application.date` does not shadow.
+_Day = date
+
 # The fields the user writes text into, on the Application's page or by hand.
 _WRITTEN_DOWN = ("notes", "address")
 
@@ -61,6 +64,10 @@ class Application:
     """What the user wrote down about this pursuit."""
     address: str = ""
     """The employer's address, line for line as it was typed."""
+    sent: bool = False
+    """Whether it went out: its Status became `waiting` or `interview` at some point."""
+    sent_on: _Day | None = None
+    """Its Sent date, None when it was not sent or nobody recorded the day."""
 
 
 class AlreadyBroughtIn(Exception):
@@ -454,7 +461,25 @@ def _parse(record: dict[Any, Any], folder: str) -> Application:
         status=_status(record, "status"),
         notes=_written_down(record, "notes"),
         address=_written_down(record, "address"),
+        **_sent(record, _status(record, "status")),
     )
+
+
+_GONE_OUT = (Status.WAITING, Status.INTERVIEW)
+
+
+def _sent(record: dict[Any, Any], status: Status) -> dict[str, Any]:
+    """Whether the Application went out, and on which day: the first time its history reached
+    `waiting` or `interview`. A history written by hand is read as far as it can be, and one that
+    says nothing leaves the current Status to decide."""
+    history = record.get("history")
+    for entry in history if isinstance(history, list) else []:
+        if isinstance(entry, dict) and entry.get("status") in _GONE_OUT:
+            try:
+                return {"sent": True, "sent_on": _date(entry, "date")}
+            except Malformed:
+                return {"sent": True}
+    return {"sent": status in _GONE_OUT}
 
 
 def _date(record: dict[Any, Any], field: str) -> date:

@@ -200,6 +200,24 @@ def test_the_prompt_carries_the_brief_the_notes_and_the_posting(
     assert "Research Engineer" in prompt
 
 
+def test_the_prompt_holds_the_letter_to_one_page(
+    dashboard: TestClient,
+    data_dir: Path,
+    write_application: WriteApplication,
+    model: ScriptedModel,
+) -> None:
+    write_application(FOLDER, RECORD)
+    write_brief(data_dir)
+    model.answers.append(ANSWER)
+    ask_for_a_first_version(dashboard)
+
+    fetch_next_answer(dashboard)
+
+    (prompt,) = model.asked
+    assert "fits on one A4 page" in prompt
+    assert "250 words" in prompt
+
+
 def test_the_prompt_carries_neither_the_employers_address_nor_a_date(
     dashboard: TestClient,
     data_dir: Path,

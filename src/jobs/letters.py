@@ -586,6 +586,10 @@ The body runs from the subject line through the closing formula, and holds nothi
 Letter is from, who it goes to, when it was written and the signature are set around the body by \
 a template: write none of them, and no placeholder for them.
 
+The whole Letter fits on one A4 page, with the address, the date and the signature around the \
+body. Keep the body to at most 250 words, the subject line and the closing formula included; \
+if what has to be said does not fit, leave out what matters least, and say what you left out.
+
 Write only what you are handed here supports. If you lack a fact, say so in your message \
 instead of inventing it.
 

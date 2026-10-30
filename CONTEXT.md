@@ -101,7 +101,8 @@ _Avoid_: file, attachment, asset
 The cover letter of an Application, the one Document written for it alone. An Application has at
 most one. A model only ever writes its *body*, from the subject line through the closing formula;
 what is fact — who it is from, who it goes to, the date — is not prose and is not the model's to
-change. It can be revised only while its Application is `todo`.
+change. It fits on one A4 page, which keeps its body to about 250 words. It can be revised only
+while its Application is `todo`.
 _Avoid_: cover letter, Anschreiben, draft, which is what the Send Gate produces
 
 **Revision**:

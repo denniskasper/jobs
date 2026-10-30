@@ -242,6 +242,13 @@
       {% endif %}
     </section>
   </div>
+
+  <section class="danger" id="danger" aria-labelledby="danger-title">
+    <h2 class="danger-title" id="danger-title">Danger zone</h2>
+    <p class="note">For an Application that should never have existed: it goes, with all it holds,
+      and the data repository's history is the only place it can be found again.</p>
+    <a class="add quiet" href="{{ url_for('deletion', folder=application.folder) }}">Delete this Application…</a>
+  </section>
 {% endblock %}
 
 {% block after %}

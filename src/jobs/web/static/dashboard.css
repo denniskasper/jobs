@@ -764,6 +764,14 @@ details.note[open] .less { display: inline; color: var(--ink-3); }
 .decide form { flex: 1; }
 .decide .add { width: 100%; }
 
+/* Where an Application is deleted: set well apart below everything else, ruled in red pencil. */
+.danger { margin-top: 64px; padding-top: 14px; border-top: 2px solid var(--strike); }
+.danger-title { margin: 0 0 10px; font-family: var(--label); font-size: 18px; font-weight: 600; color: var(--strike); }
+.danger .note { margin-bottom: 14px; }
+.goes { margin: 0 0 14px; padding-left: 20px; }
+.decide > .add { flex: 1; }
+.add.danger-go { width: 100%; background: var(--strike); border-color: var(--strike); color: var(--ground); }
+
 /* The box in which the Letter is edited by hand, behind its switch. */
 .by-hand, .as-text { margin-top: 20px; font-family: var(--label); font-size: 16px; }
 .by-hand summary, .as-text summary { display: flex; align-items: center; min-height: var(--hit); cursor: pointer; color: var(--ink-2); }

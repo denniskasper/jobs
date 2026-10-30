@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ application.role }}, {{ application.company }} · Job search{% endblock %}
+
+{% block shell %}
+  <h1 class="lede">Delete {{ application.role }}?</h1>
+
+  <div class="bar">
+    {% set tab = 'applications' %}{% include "tabs.html" %}
+  </div>
+
+  {% include "notes.html" %}
+
+  <section class="danger" aria-labelledby="danger-title">
+    <h2 class="danger-title" id="danger-title">{{ application.role }} at {{ application.company }}</h2>
+    {% if goes %}
+    <p class="note">Its folder goes, and with it:</p>
+    <ul class="goes">
+      {%- for name in goes %}
+      <li>{{ name }}</li>
+      {%- endfor %}
+    </ul>
+    {% else %}
+    <p class="note">Its folder goes. It holds nothing else: no Posting, Letter, Conversation or notes.</p>
+    {% endif %}
+    <p class="note">The shared Documents stay. The removal is committed and pushed, and only the
+      data repository's history keeps what went.</p>
+    <div class="decide">
+      <form method="post" action="{{ url_for('delete', folder=application.folder) }}">
+        <button type="submit" class="add danger-go">Delete</button>
+      </form>
+      <a class="add quiet" href="{{ url_for('application', folder=application.folder) }}">Keep it</a>
+    </div>
+  </section>
+{% endblock %}

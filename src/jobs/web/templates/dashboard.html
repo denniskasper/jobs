@@ -15,6 +15,10 @@
 
   {% include "notes.html" %}
 
+  {% if deleted %}
+  <p class="note" role="status">Deleted {{ deleted[0] }}{% if deleted[1] %} at {{ deleted[1] }}{% endif %}.</p>
+  {% endif %}
+
   {% if problems %}
   <div class="note" role="alert">
     <p><strong>{{ problems|length }} Application {{ "record" if problems|length == 1 else "records" }} could not be read.</strong>

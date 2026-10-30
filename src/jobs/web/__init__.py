@@ -34,6 +34,7 @@ from jobs.applications import (
     Status,
     change_status,
     create_application,
+    delete_application,
     give_text,
     holding,
     lacks_text,
@@ -156,6 +157,10 @@ AGAIN = "again"
 # them to its own shape.
 ICON_SIZES = (192, 512)
 
+# What the dashboard is opened with after a Deletion: the role and the company it deleted.
+DELETED = "deleted"
+AT = "at"
+
 # What the Sources page adds to its address when it asks for itself again.
 BY_ITSELF = "by-itself"
 
@@ -237,6 +242,7 @@ def create_app(
 
     def render(request: Request, refusal: Refused | NotCommitted | None = None) -> Response:
         listing = list_applications(data_dir)
+        query = request.query_params
         return page(
             request,
             "dashboard.html",
@@ -247,6 +253,10 @@ def create_app(
                 "entered": {},
                 "statuses": list(Status),
                 "status_badges": STATUS_BADGES,
+                # Only the page as it is asked for: a refusal is not what a Deletion led to.
+                "deleted": (query.get(DELETED, ""), query.get(AT, ""))
+                if refusal is None and query.get(DELETED)
+                else None,
             },
             refusal,
         )
@@ -437,6 +447,49 @@ def create_app(
 
     def application(request: Request) -> Response:
         return render_application(request)
+
+    def deletion(request: Request) -> Response:
+        # Shows what a Deletion takes along, and deletes nothing.
+        folder = request.path_params["folder"]
+        try:
+            application = read_application(data_dir, folder)
+        except Refused as not_opened:
+            return render(request, not_opened)
+        try:
+            has_posting = posting_of(data_dir, folder) is not None
+        except Malformed:
+            # It is there, if unreadable, and goes with the rest.
+            has_posting = True
+        standing = letters.look(folder)
+        goes = [
+            name
+            for name, held in (
+                ("The Posting", has_posting),
+                ("The Letter", bool(standing.letter) or standing.difference is not None),
+                ("The Conversation", bool(standing.messages)),
+                ("The notes", bool(application.notes)),
+                ("The employer's address", bool(application.address)),
+            )
+            if held
+        ]
+        return page(request, "delete_application.html", {"application": application, "goes": goes})
+
+    async def delete(request: Request) -> Response:
+        folder = request.path_params["folder"]
+        try:
+            deleted = await run_in_threadpool(delete_application, data_dir, committer, folder)
+        except NotFound:
+            # A second tab, or a second press: what was asked for is done already.
+            return render(request, NotFound(f"{folder} is gone already: nothing was deleted."))
+        except (Refused, NotCommitted) as refusal:
+            # On the dashboard when there is no Application left to show it on.
+            return render_application(request, refusal)
+        return RedirectResponse(
+            request.url_for("dashboard").include_query_params(
+                **{DELETED: deleted.role, AT: deleted.company}
+            ),
+            status_code=303,
+        )
 
     async def save_application(request: Request) -> Response:
         form = await request.form()
@@ -853,6 +906,8 @@ def create_app(
             Route("/applications/{folder:path}/letter/edit", edit_letter, methods=["POST"]),
             Route("/applications/{folder:path}/letter/revision.pdf", revision_pdf),
             Route("/applications/{folder:path}/letter.pdf", letter_pdf),
+            Route("/applications/{folder:path}/delete", deletion),
+            Route("/applications/{folder:path}/delete", delete, methods=["POST"]),
             Route("/applications/{folder:path}", application),
             Route(
                 "/applications/{folder:path}",

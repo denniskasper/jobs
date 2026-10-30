@@ -551,7 +551,9 @@ def test_sending_leaves_the_page_where_it_was_scrolled_to(
         assert before > 0
 
         with page.expect_navigation():
-            page.click("#conversation button:has-text('Send')")
+            # Pressed where it stands, as a hand does: a click of Playwright's own may scroll
+            # the page first.
+            page.dispatch_event("#conversation button:has-text('Send')", "click")
         page.wait_for_load_state()
 
         assert "An answer is under way" in (page.text_content("#conversation") or "")

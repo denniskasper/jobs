@@ -11,6 +11,7 @@ from jobs.fetching import Offline
 from jobs.models import NoModel
 from jobs.store import bring_up_to_date
 from jobs.web import create_app
+from test_deletion import confirm
 from test_proposals import write_posting
 
 FOLDER = "nordwind-robotics/2026-09-18-simulation-engineer"
@@ -252,3 +253,27 @@ def test_an_application_created_in_a_store_the_service_made_itself_is_committed(
     page = dashboard.get("/")
     assert "Nordwind Robotics" in page.text
     assert "Not pushed." not in page.text
+
+
+def test_a_deletion_commits_the_removal_of_the_folder_and_nothing_else(
+    dashboard: TestClient, repository: Path
+) -> None:
+    dashboard.post("/documents", files={"file": ("resume.pdf", b"%PDF-1.7 an invented resume")})
+    dashboard.post(
+        "/applications", data={"company": "Nordwind Robotics", "role": "Simulation Engineer"}
+    )
+    dashboard.post(f"/applications/{FOLDER}", data={"notes": "A test while trying the app out."})
+    (repository / "README.md").write_text("The data, edited by hand.\n", encoding="utf-8")
+
+    deleted = confirm(dashboard, FOLDER)
+
+    assert deleted.status_code == 303
+    assert git(repository, "log", "-1", "--format=%s").startswith("Delete Application")
+    assert git(repository, "ls-tree", "-r", "--name-only", "HEAD", "applications") == ""
+    assert git(repository, "status", "--porcelain").splitlines() == [" M README.md"]
+    assert git(repository, "ls-tree", "-r", "--name-only", "HEAD", "documents") != ""
+    touched = git(repository, "log", "-1", "--name-status", "--format=").splitlines()
+    assert sorted(touched) == [
+        f"D\tapplications/{FOLDER}/application.yaml",
+        f"D\tapplications/{FOLDER}/resume.pdf",
+    ]

@@ -348,6 +348,35 @@ def change_status(data_dir: Path, committer: Committer, folder: str, *, to: str,
     )
 
 
+def delete_application(data_dir: Path, committer: Committer, folder: str) -> Application:
+    """Delete the Application in `folder`: remove its folder, and its company's folder when that
+    is left empty, and commit the removal under a message naming the role and the company. The
+    shared Documents linked into it go as links only. Gives back what was deleted. Raises
+    NotFound, Refused and NotCommitted."""
+    directory = directory_of(data_dir, folder)
+    # Its record names what is deleted, so one that cannot be read is left as it is.
+    application = read_application(data_dir, folder)
+    try:
+        shutil.rmtree(directory)
+    except OSError as error:
+        raise Refused(
+            f"{folder} could not be deleted completely: {error.strerror}. Look at what is left of "
+            "it by hand."
+        ) from error
+    _remove_if_empty(directory.parent)
+    try:
+        committer.commit(
+            f"Delete Application {folder}, {application.role} at {application.company}",
+            [directory],
+        )
+    except CommitFailed as failed:
+        raise NotCommitted(
+            f"{folder} was deleted but the deletion could not be committed: {failed}. Commit "
+            "its removal by hand in the data repository."
+        ) from failed
+    return application
+
+
 def write_down(
     data_dir: Path,
     committer: Committer,

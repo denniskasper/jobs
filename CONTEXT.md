@@ -163,6 +163,12 @@ The second gate. Documents are complete and revised; passing this gate lets the 
 portal form or draft the email, and stop. The final submit is always a human click.
 _Avoid_: approval, sign-off, confirm
 
+**Deletion**:
+Removing an Application that was never sent, because it should not have existed: its folder, Posting,
+Letter, Conversation and notes go, in one commit. A pursued Posting it held is dismissed. Only ever
+asked for by a human, and only once the human has seen what goes.
+_Avoid_: archive, close, withdraw (that is `closed`), discard
+
 ### Sending
 
 **Channel**:

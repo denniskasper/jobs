@@ -196,3 +196,65 @@ def test_the_same_link_brought_in_again_creates_a_new_application(
     assert created.status_code == 303
     assert created.headers["location"].endswith(PAGE)
     assert (data_dir / "applications" / FOLDER / "posting.yaml").is_file()
+
+
+def mark(dashboard: TestClient, *statuses: str) -> None:
+    for status in statuses:
+        dashboard.post(f"{PAGE}/status", data={"status": status})
+
+
+def test_a_waiting_or_interview_application_can_only_be_closed(dashboard: TestClient) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer")
+
+    for status in ("waiting", "interview"):
+        mark(dashboard, status)
+        zone = danger_zone(dashboard.get(PAGE).text)
+
+        assert zone is not None
+        assert "Delete this Application" not in zone
+        assert "was sent" in zone and "closed" in zone
+
+
+def test_one_sent_once_can_only_be_closed_whatever_it_is_now(dashboard: TestClient) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer")
+
+    for status in ("todo", "closed"):
+        mark(dashboard, "waiting", status)
+        zone = danger_zone(dashboard.get(PAGE).text)
+
+        assert zone is not None
+        assert "Delete this Application" not in zone
+        assert "was sent" in zone
+
+
+def test_deleting_a_sent_application_anyway_is_refused_and_changes_nothing(
+    dashboard: TestClient, data_dir: Path, committer: RememberedCommits
+) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer")
+    action = re.findall(r'<form method="post" action="([^"]+)"', confirmation(dashboard))[0]
+    mark(dashboard, "interview", "todo")
+    record = (data_dir / "applications" / FOLDER / "application.yaml").read_text()
+    commits = len(committer.commits)
+
+    refused = dashboard.post(html.unescape(action))
+    asked = dashboard.get(f"{PAGE}/delete")
+
+    assert refused.status_code == 422
+    assert "cannot be deleted: set it to closed instead" in refused.text
+    assert asked.status_code == 422
+    assert "cannot be deleted: set it to closed instead" in asked.text
+    assert '<button type="submit" class="add danger-go">' not in asked.text
+    assert (data_dir / "applications" / FOLDER / "application.yaml").read_text() == record
+    assert len(committer.commits) == commits
+
+
+def test_a_closed_application_never_sent_can_be_deleted(
+    dashboard: TestClient, data_dir: Path
+) -> None:
+    create(dashboard, company="Nordwind Robotics", role="Simulation Engineer")
+    mark(dashboard, "closed")
+
+    deleted = confirm(dashboard)
+
+    assert deleted.status_code == 303
+    assert not (data_dir / "applications" / FOLDER).exists()

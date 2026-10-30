@@ -41,6 +41,7 @@ from jobs.applications import (
     list_applications,
     posting_of,
     read_application,
+    refuse_if_sent,
     write_down,
 )
 from jobs.clock import Clock
@@ -455,6 +456,10 @@ def create_app(
             application = read_application(data_dir, folder)
         except Refused as not_opened:
             return render(request, not_opened)
+        try:
+            refuse_if_sent(application)
+        except Refused as refusal:
+            return render_application(request, refusal)
         try:
             has_posting = posting_of(data_dir, folder) is not None
         except Malformed:

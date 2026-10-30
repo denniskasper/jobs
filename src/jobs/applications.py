@@ -351,11 +351,12 @@ def change_status(data_dir: Path, committer: Committer, folder: str, *, to: str,
 def delete_application(data_dir: Path, committer: Committer, folder: str) -> Application:
     """Delete the Application in `folder`: remove its folder, and its company's folder when that
     is left empty, and commit the removal under a message naming the role and the company. The
-    shared Documents linked into it go as links only. Gives back what was deleted. Raises
-    NotFound, Refused and NotCommitted."""
+    shared Documents linked into it go as links only. One that was ever sent is refused: it can
+    only be closed. Gives back what was deleted. Raises NotFound, Refused and NotCommitted."""
     directory = directory_of(data_dir, folder)
     # Its record names what is deleted, so one that cannot be read is left as it is.
     application = read_application(data_dir, folder)
+    refuse_if_sent(application)
     try:
         shutil.rmtree(directory)
     except OSError as error:
@@ -375,6 +376,16 @@ def delete_application(data_dir: Path, committer: Committer, folder: str) -> App
             "its removal by hand in the data repository."
         ) from failed
     return application
+
+
+def refuse_if_sent(application: Application) -> None:
+    """Refuse the Deletion of an Application that was ever sent, by the rule of the Sent date:
+    what went out to whom stays, and it can only be `closed`."""
+    if application.sent:
+        raise Refused(
+            f"{application.role} at {application.company} was sent, so it cannot be deleted: "
+            "set it to closed instead."
+        )
 
 
 def write_down(

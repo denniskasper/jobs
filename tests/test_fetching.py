@@ -67,8 +67,12 @@ def site() -> Iterator[Site]:
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            served.requested.append(self.path)
-            served.agents.append(self.headers.get("User-Agent", ""))
+            # Whatever else listens on this machine may knock on a port to see what answers
+            # there, at its root: no test asks for a root it does not serve, so that is no
+            # request of the test's.
+            if self.path != "/" or "/" in served.pages:
+                served.requested.append(self.path)
+                served.agents.append(self.headers.get("User-Agent", ""))
             page = served.pages.get(self.path, Served(status=404))
             self.send_response(page.status)
             if page.location:

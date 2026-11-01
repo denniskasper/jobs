@@ -297,12 +297,15 @@ minutes a month**; Linux runners bill at 1x and each job is rounded up to the ne
 
 | Push | Jobs | Roughly |
 |---|---|---|
-| a branch | `checks` | 3-5 min |
-| `main`, prose or tickets only | `checks`, `image-inputs` | 4-6 min |
-| `main`, touching `src/` or the Dockerfile | all four | 8-14 min |
+| a branch | `lint`, `tests`, `image` | 4-6 min |
+| `main`, prose or tickets only | those and `image-inputs` | 5-7 min |
+| `main`, touching `src/` or the Dockerfile | all six | 8-12 min |
 
-So in a private copy a busy month of daily pushes sits near a tenth of the allowance. The image build dominates the
-`checks` job and is cached across runs; the rest is dependency installation.
+So in a private copy a busy month of daily pushes sits near a tenth of the allowance. The three
+check jobs run side by side, so a run waits only as long as the tests take, about two minutes; each
+is billed on its own, which costs a minute or two more than one job doing all three in turn. The
+image build is cached across runs, the tests run one worker per core, and the rest is dependency
+installation.
 
 ### What none of it guarantees
 

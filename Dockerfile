@@ -38,7 +38,9 @@ USER root
 # The browser that renders the listings a script fills in, with the system libraries it needs.
 # Installed before the source is copied so that the layer, the largest in the image, survives
 # every change to the code; the version is pinned because a Playwright only drives the Chromium
-# build it was released with. Kept outside any home directory, where the unprivileged user finds it.
+# build it was released with. pyproject.toml pins the same one, so CI tests the Playwright that
+# ships; tests/test_image.py fails when the two differ. Kept outside any home directory, where the
+# unprivileged user finds it.
 ARG PLAYWRIGHT_VERSION=1.63.0
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 RUN pip install --no-cache-dir --root-user-action=ignore "playwright==${PLAYWRIGHT_VERSION}" \

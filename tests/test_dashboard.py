@@ -125,6 +125,31 @@ def test_the_stylesheet_is_linked_at_an_address_that_names_what_it_holds(
     assert hashlib.sha256(stylesheet.content).hexdigest()[:12] in address
 
 
+def test_the_stylesheet_at_that_address_is_kept_for_good(dashboard: TestClient) -> None:
+    """What that address holds never changes, so a browser need not ask again on every page."""
+    (address,) = re.findall(r'<link rel="stylesheet" href="([^"]+)">', dashboard.get("/").text)
+
+    assert "immutable" in dashboard.get(address).headers["cache-control"]
+
+
+def test_a_static_file_at_an_address_without_its_hash_is_asked_for_again(
+    dashboard: TestClient,
+) -> None:
+    """An icon is linked by its name alone, and the name stays when the file changes."""
+    assert dashboard.get("/static/favicon.svg").headers.get("cache-control", "no-cache") == (
+        "no-cache"
+    )
+
+
+def test_pages_go_out_compressed_to_a_browser_that_takes_it(dashboard: TestClient) -> None:
+    """A phone on the move fetches the page and its stylesheet a fifth of the size."""
+    (address,) = re.findall(r'<link rel="stylesheet" href="([^"]+)">', dashboard.get("/").text)
+
+    for path in ("/", address):
+        answer = dashboard.get(path, headers={"Accept-Encoding": "gzip"})
+        assert answer.headers["content-encoding"] == "gzip"
+
+
 def test_the_health_check_answers_without_reading_any_application(
     dashboard: TestClient, write_application: WriteApplication
 ) -> None:

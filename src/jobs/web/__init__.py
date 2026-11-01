@@ -16,6 +16,8 @@ from markupsafe import Markup
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
+from starlette.middleware import Middleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
 from starlette.responses import (
     FileResponse,
@@ -27,6 +29,7 @@ from starlette.responses import (
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
+from starlette.types import Scope
 
 from jobs import __version__, guess, packets
 from jobs.applications import (
@@ -197,6 +200,24 @@ def _custom_property(stylesheet: bytes, name: str) -> str:
     return found[1].strip()
 
 
+class _Static(StaticFiles):
+    """The static files, of which one asked for at the address naming what it holds is kept by the
+    browser for good: that address never holds anything else. Every other is asked for again."""
+
+    def __init__(self, *, directory: Path, versions: dict[str, str]) -> None:
+        super().__init__(directory=directory)
+        self.versions = versions
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        version = self.versions.get(path)
+        if version is not None and scope["query_string"].decode() == version:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 def create_app(
     *,
     data_dir: Path,
@@ -227,7 +248,8 @@ def create_app(
     # A browser keeps a stylesheet it has seen, so the address it is linked at names what it
     # holds: a new one is fetched with the first page that wants it.
     stylesheet = (HERE / "static" / "dashboard.css").read_bytes()
-    templates.env.globals["stylesheet"] = hashlib.sha256(stylesheet).hexdigest()[:12]
+    stylesheet_version = hashlib.sha256(stylesheet).hexdigest()[:12]
+    templates.env.globals["stylesheet"] = stylesheet_version
     poller = Poller(data_dir, committer, network, clock, sleep)
     proposing = Proposals(data_dir, committer, clock)
     registrations = Registrations(data_dir, committer, network, model, clock, sleep, runner)
@@ -1064,6 +1086,8 @@ def create_app(
 
     app = Starlette(
         lifespan=lifespan,
+        # Pages and the stylesheet are text, and a phone on the move fetches a fifth of them.
+        middleware=[Middleware(GZipMiddleware)],
         routes=[
             Route("/", dashboard),
             Route("/health", health),
@@ -1126,7 +1150,14 @@ def create_app(
             Route("/sources/{name}/rederive", derive_again, methods=["POST"]),
             Route("/sources/{name}/rederive/accept", accept_derived, methods=["POST"]),
             Route("/poll", poll_all, methods=["POST"]),
-            Mount("/static", StaticFiles(directory=HERE / "static"), name="static"),
+            Mount(
+                "/static",
+                _Static(
+                    directory=HERE / "static",
+                    versions={"dashboard.css": stylesheet_version},
+                ),
+                name="static",
+            ),
         ],
     )
     app.state.registrations = registrations

@@ -419,11 +419,14 @@ def test_the_page_shows_an_answer_when_it_arrives_but_never_under_the_users_hand
     ask_for_a_first_version(dashboard)
     with in_the_browser(new_app) as (page, origin):
         asked_for: list[str] = []
-        # What the service is asked for: a typeface fetched from elsewhere is not a turn.
+        # What the service is asked for: a typeface or a stylesheet is not a turn.
         page.on(
             "request",
             lambda request: (
-                asked_for.append(request.url) if request.url.startswith(origin) else None
+                asked_for.append(request.url)
+                if request.url.startswith(origin)
+                and not request.url.startswith(f"{origin}/static/")
+                else None
             ),
         )
         # The page's own clock, so that a turn passes when the test says so.

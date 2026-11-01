@@ -202,7 +202,8 @@ def _custom_property(stylesheet: bytes, name: str) -> str:
 
 class _Static(StaticFiles):
     """The static files, of which one asked for at the address naming what it holds is kept by the
-    browser for good: that address never holds anything else. Every other is asked for again."""
+    browser for good: that address never holds anything else. So is a font, whose filename carries
+    its hash. Every other is asked for again."""
 
     def __init__(self, *, directory: Path, versions: dict[str, str]) -> None:
         super().__init__(directory=directory)
@@ -211,7 +212,8 @@ class _Static(StaticFiles):
     async def get_response(self, path: str, scope: Scope) -> Response:
         response = await super().get_response(path, scope)
         version = self.versions.get(path)
-        if version is not None and scope["query_string"].decode() == version:
+        versioned = version is not None and scope["query_string"].decode() == version
+        if versioned or path.startswith("fonts/"):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         else:
             response.headers["Cache-Control"] = "no-cache"

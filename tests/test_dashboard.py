@@ -150,6 +150,26 @@ def test_pages_go_out_compressed_to_a_browser_that_takes_it(dashboard: TestClien
         assert answer.headers["content-encoding"] == "gzip"
 
 
+def test_no_page_asks_another_site_for_its_fonts(dashboard: TestClient) -> None:
+    """Every page would otherwise tell the font host when the dashboard was opened."""
+    page = dashboard.get("/").text
+
+    assert "fonts.googleapis.com" not in page
+    assert "fonts.gstatic.com" not in page
+
+
+def test_every_font_the_stylesheet_names_is_there_and_kept_for_good(dashboard: TestClient) -> None:
+    """A font's filename carries its hash, so what an address holds never changes."""
+    (address,) = re.findall(r'<link rel="stylesheet" href="([^"]+)">', dashboard.get("/").text)
+    fonts = re.findall(r'url\("(fonts/[^"]+\.woff2)"\)', dashboard.get(address).text)
+
+    assert fonts
+    for font in fonts:
+        answer = dashboard.get(f"/static/{font}")
+        assert answer.status_code == 200
+        assert "immutable" in answer.headers["cache-control"]
+
+
 def test_the_health_check_answers_without_reading_any_application(
     dashboard: TestClient, write_application: WriteApplication
 ) -> None:
